@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    ports:
+      - "80:3001"
+    volumes:
+      - ./data:/app/packages/backend/data
+    environment:
+      - PORT=3001
+      - ADMIN_PASSWORD=changeme
+    restart: unless-stopped
