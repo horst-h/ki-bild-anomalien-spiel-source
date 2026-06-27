@@ -80,7 +80,16 @@ jobs:
             git pull origin main
             docker compose pull
             docker compose up -d
-            curl -f --retry 12 --retry-delay 5 --retry-connrefused http://localhost:3001/api/health
+            echo "Warte auf Container-Healthcheck..."
+            for i in $(seq 1 18); do
+              STATUS=$(docker inspect --format='{{.State.Health.Status}}' ki-bild-anomalien-spiel-app-1 2>/dev/null || echo "starting")
+              echo "  [$i/18] Status: $STATUS"
+              [ "$STATUS" = "healthy" ] && echo "Container ist healthy." && exit 0
+              sleep 5
+            done
+            echo "Container nicht healthy nach 90s – Logs:"
+            docker compose logs --tail=20
+            exit 1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
