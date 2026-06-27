@@ -1,6 +1,6 @@
 services:
   app:
-    build: .
+    image: ghcr.io/horst-h/ki-bild-anomalien-spiel-source:latest
     ports:
       - "80:3001"
     volumes:
