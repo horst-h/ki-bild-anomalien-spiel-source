@@ -35,6 +35,8 @@ COPY --from=build /app/packages/shared/dist packages/shared/dist
 
 COPY --from=build /app/packages/backend/package.json packages/backend/package.json
 COPY --from=build /app/packages/backend/dist packages/backend/dist
+# Per-Package node_modules für Pakete die npm nicht in root hoisten konnte
+COPY --from=build /app/packages/backend/node_modules packages/backend/node_modules
 
 COPY --from=build /app/packages/frontend/dist packages/frontend/dist
 
