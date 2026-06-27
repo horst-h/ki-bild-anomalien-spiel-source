@@ -48,6 +48,17 @@ npm run lint
 npm test
 ```
 
+./scripts/e2e.sh
+Playwright-Argumente werden durchgereicht, z. B.:
+
+## Scripts für Testaufrufe
+
+```bash
+./scripts/e2e.sh --headed          # Browser sichtbar
+./scripts/e2e.sh --grep "Ray-Casting"  # einzelnen Test laufen lassen
+./scripts/e2e.sh --debug           # mit Playwright Inspector
+```
+
 (Noch ohne konkrete Konfiguration – Platzhalter-Skripte in den jeweiligen `package.json`-Dateien
 ergänzen, sobald Tooling feststeht.)
 

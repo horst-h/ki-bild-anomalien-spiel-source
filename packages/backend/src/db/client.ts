@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const dataDir = path.resolve(__dirname, "../../data");
+const dataDir = process.env.DATA_DIR ?? path.resolve(__dirname, "../../data");
 const imagesDir = path.join(dataDir, "images");
 
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });

@@ -12,32 +12,44 @@
 
 // Anstößige Begriffe (Deutsch + Englisch) – Substring-Check
 export const BLOCKED_TERMS: readonly string[] = [
-  // Deutsch
+  // Deutsch – vulgär/sexuell
   "arsch",
-  "scheiss", // ß → ss via Normalisierung
+  "scheiss",   // ß → ss via Normalisierung
   "fick",
-  "wichser",
   "wichs",
+  "hure",
   "hurensohn",
   "nutte",
-  "hure",
-  "votze",
+  "fotze",
+  "muschi",
+  "schlampe",
   "kacke",
   "pisser",
-  // Politisch / diskriminierend
+  "schwuchtel",
+  // Deutsch – Diskriminierung/Behinderung
+  "spast",
+  "mongo",
+  "kanake",
+  // Politisch
   "nazi",
   "hitler",
   "neger",
-  // Englisch
+  "nsdap",
+  // Englisch – vulgär/sexuell
   "fuck",
   "shit",
   "cunt",
-  "nigger",
+  "pussy",
   "bitch",
+  "whore",
+  "slut",
   "asshole",
   "motherfuck",
   "faggot",
-  "whore",
+  // Englisch – Diskriminierung
+  "nigger",
+  "chink",
+  "retard",
   "bastard",
 ];
 
@@ -55,4 +67,6 @@ export const IMPERSONATION_TERMS: readonly string[] = [
   "gamemaster",
   "sysop",
   "root",
+  "veranstalter",
+  "festivalteam",
 ];

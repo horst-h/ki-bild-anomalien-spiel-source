@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:e2e": "vite --config vite.e2e.config.ts",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "echo \"(Lint folgt, z. B. eslint .)\""
+    "lint": "echo \"(Lint wird vom Root eslint.config.mjs abgedeckt – 'npm run lint' im Projektroot)\""
   },
   "dependencies": {
     "shared": "*",

@@ -32,7 +32,9 @@ gameRouter.post("/", async (req, res) => {
     return;
   }
 
-  const nameCheck = await checkPlayerName(parsed.data.playerName);
+  const nameCheck = await checkPlayerName(parsed.data.playerName, {
+    usePerspective: Boolean(process.env.PERSPECTIVE_API_KEY),
+  });
   if (nameCheck.verdict === "blocked") {
     res.status(400).json({ error: "Name nicht erlaubt" });
     return;

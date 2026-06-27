@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db } from "../../db/client.js";
 import { processAndStoreImage } from "../../services/imageProcessing.js";
 import { requireAdmin } from "../../middleware/adminAuth.js";
+import { polygonsIntersect } from "../../services/geometry.js";
 
 export const adminCatalogRouter = Router();
 adminCatalogRouter.use(requireAdmin);
@@ -184,35 +185,20 @@ function validateForPublish(image: any, areas: any[]): string[] {
   if (!image.time_limit_seconds) missing.push("Zeitlimit fehlt");
 
   const polygons = areas.map((a) => JSON.parse(a.polygon_json));
-  if (hasOverlap(polygons)) missing.push("Es gibt überlappende Fehlerbereiche");
+  if (hasPolygonOverlap(polygons)) missing.push("Es gibt überlappende Fehlerbereiche");
 
   return missing;
 }
 
 function findOverlappingAreas(areas: { polygon: { x: number; y: number }[] }[]): string | null {
   const polygons = areas.map((a) => a.polygon);
-  return hasOverlap(polygons) ? "Fehlerbereiche dürfen sich nicht überlappen" : null;
+  return hasPolygonOverlap(polygons) ? "Fehlerbereiche dürfen sich nicht überlappen" : null;
 }
 
-/**
- * Vereinfachte Überlappungsprüfung über die Bounding-Boxen der Polygone.
- * Für den MVP ausreichend; bei Bedarf später durch eine echte
- * Polygon-Intersection ersetzen.
- */
-function hasOverlap(polygons: { x: number; y: number }[][]): boolean {
-  const boxes = polygons.map((p) => {
-    const xs = p.map((pt) => pt.x);
-    const ys = p.map((pt) => pt.y);
-    return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
-  });
-
-  for (let i = 0; i < boxes.length; i++) {
-    for (let j = i + 1; j < boxes.length; j++) {
-      const a = boxes[i];
-      const b = boxes[j];
-      const overlapsX = a.minX < b.maxX && b.minX < a.maxX;
-      const overlapsY = a.minY < b.maxY && b.minY < a.maxY;
-      if (overlapsX && overlapsY) return true;
+function hasPolygonOverlap(polygons: { x: number; y: number }[][]): boolean {
+  for (let i = 0; i < polygons.length; i++) {
+    for (let j = i + 1; j < polygons.length; j++) {
+      if (polygonsIntersect(polygons[i], polygons[j])) return true;
     }
   }
   return false;

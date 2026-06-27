@@ -8,10 +8,18 @@
   "scripts": {
     "dev": "concurrently \"npm:dev --workspace=backend\" \"npm:dev --workspace=frontend\"",
     "build": "npm run build --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present"
+    "lint": "eslint packages/",
+    "test": "npm run test --workspaces --if-present",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
-    "concurrently": "^9.0.0"
+    "@playwright/test": "^1.61.1",
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^12.11.1",
+    "concurrently": "^9.0.0",
+    "eslint": "^9.0.0",
+    "eslint-plugin-react": "^7.37.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "typescript-eslint": "^8.0.0"
   }
 }
