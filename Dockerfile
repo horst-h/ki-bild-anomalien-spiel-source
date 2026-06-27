@@ -20,6 +20,8 @@ RUN npm run build --workspace=shared && \
 
 # Dev-Abhängigkeiten entfernen; native .node-Dateien bleiben erhalten
 RUN npm prune --omit=dev
+# Sicherstellen dass per-Package node_modules immer existiert (auch wenn npm alles gehoisted hat)
+RUN mkdir -p packages/backend/node_modules
 
 # --- Stage 2: Runtime ---
 FROM node:20-alpine AS runtime
