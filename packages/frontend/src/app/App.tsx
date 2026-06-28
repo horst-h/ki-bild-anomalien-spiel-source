@@ -603,15 +603,32 @@ function GameScreen({
     setCursor({ x, y });
   }
 
-  function handleOverlayClick(e: React.MouseEvent<HTMLDivElement>) {
+  async function handleOverlayClick(e: React.MouseEvent<HTMLDivElement>) {
     if (doneRef.current || draggingId !== null) return;
     if (markers.length >= image.zones.length) return;
+
     const { x, y } = getRelativePos(e);
     const id = markers.length + 1;
-    const zoneId = findZone(x, y);
-    const updated = [...markersRef.current, { id, x, y, zoneId }];
-    markersRef.current = updated;
-    setMarkers(updated);
+
+    try {
+      // Send click to backend for validation
+      const result = await api.attempt(gameId, taskIndex, x / 100, y / 100);
+
+      // Add marker locally (always, even if miss - for UI feedback)
+      const zoneId = result.result === "hit" ? result.areaId : null;
+      const updated = [...markersRef.current, { id, x, y, zoneId }];
+      markersRef.current = updated;
+      setMarkers(updated);
+
+      // Optional: Show feedback based on result
+      if (result.result === "hit") {
+        console.log("✅ Hit!", result.explanation);
+      } else if (result.result === "miss") {
+        console.log("❌ Miss");
+      }
+    } catch (err) {
+      console.error("Click attempt failed:", err);
+    }
   }
 
   function handleMarkerPointerDown(e: React.PointerEvent<HTMLDivElement>, markerId: number) {
