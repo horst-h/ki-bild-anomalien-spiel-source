@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cookieSession from "cookie-session";
+import cors from "cors";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -14,6 +15,13 @@ import { checkPlayerName } from "./services/nameCheck.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
+
+// CORS für Frontend
+app.use(cors({
+  origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175"],
+  credentials: true
+}));
+
 app.use(express.json());
 
 app.use(
