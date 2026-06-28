@@ -5,6 +5,7 @@ import foxHero from "@/imports/image-2.png";
 import foxAvatar from "@/imports/image_1.png";
 import foxAvatarErzfuchs from "@/imports/image_2.png";
 import { Clock, Target, X, Check, Trophy, RotateCcw, ChevronRight, Crosshair, AlertTriangle, Info } from "lucide-react";
+import { api } from "../api";
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
@@ -1509,14 +1510,28 @@ function DevConsole({
 export default function App() {
   const [screen, setScreen] = useState<Screen>("start");
   const [player, setPlayer] = useState<{ name: string; avatar: AvatarType } | null>(null);
+  const [gameId, setGameId] = useState<string | null>(null);
   const [currentRound, setCurrentRound] = useState(0);
   const [roundResults, setRoundResults] = useState<RoundResult[]>([]);
+  const [taskCount, setTaskCount] = useState(TOTAL_ROUNDS);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleStartGame(name: string, avatar: AvatarType) {
-    setPlayer({ name, avatar });
-    setCurrentRound(0);
-    setRoundResults([]);
-    setScreen("game");
+  async function handleStartGame(name: string, avatar: AvatarType) {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.startGame(name, avatar);
+      setPlayer({ name, avatar });
+      setGameId(response.gameId);
+      setTaskCount(response.taskCount);
+      setCurrentRound(0);
+      setRoundResults([]);
+      setScreen("game");
+    } catch (err) {
+      setError((err as Error).message);
+      setLoading(false);
+    }
   }
 
   function handleRoundEnd(result: RoundResult) {
@@ -1525,7 +1540,7 @@ export default function App() {
   }
 
   function handleNext() {
-    if (currentRound + 1 >= TOTAL_ROUNDS) {
+    if (currentRound + 1 >= taskCount) {
       setScreen("final");
     } else {
       setCurrentRound(r => r + 1);
@@ -1536,8 +1551,10 @@ export default function App() {
   function handleReplay() {
     setScreen("start");
     setPlayer(null);
+    setGameId(null);
     setCurrentRound(0);
     setRoundResults([]);
+    setError(null);
   }
 
   // Dev console jump — injects mock data so every screen is previewable
@@ -1545,6 +1562,7 @@ export default function App() {
     setCurrentRound(round);
     if (target === "game") {
       setPlayer(MOCK_PLAYER);
+      setGameId("mock-game-id");
       setRoundResults([]);
       setScreen("game");
     } else if (target === "round-result") {
@@ -1554,6 +1572,7 @@ export default function App() {
       setScreen("round-result");
     } else if (target === "final") {
       setPlayer(MOCK_PLAYER);
+      setGameId("mock-game-id");
       setRoundResults(MOCK_RESULTS);
       setScreen("final");
     } else if (target === "avatar") {
@@ -1563,7 +1582,7 @@ export default function App() {
     }
   }
 
-  const currentImage = GAME_IMAGES[currentRound % GAME_IMAGES.length];
+  const currentImage = gameId ? GAME_IMAGES[currentRound % GAME_IMAGES.length] : GAME_IMAGES[0];
 
   return (
     <div className="size-full">
@@ -1572,8 +1591,11 @@ export default function App() {
           <StartScreen key="start" onStart={() => setScreen("avatar")} onAdmin={() => setScreen("admin")} />
         )}
         {screen === "avatar" && <AvatarScreen key="avatar" onStart={handleStartGame} />}
-        {screen === "game" && (
-          <GameScreen key={`game-${currentRound}`} image={currentImage} round={currentRound + 1} onRoundEnd={handleRoundEnd} />
+        {error && screen === "avatar" && (
+          <div className="fixed top-4 left-4 bg-red-500 text-white p-4 rounded">{error}</div>
+        )}
+        {screen === "game" && gameId && (
+          <GameScreen key={`game-${currentRound}`} image={currentImage} gameId={gameId} taskIndex={currentRound} round={currentRound + 1} onRoundEnd={handleRoundEnd} />
         )}
         {screen === "round-result" && roundResults.length > 0 && (
           <RoundResultScreen
@@ -1584,8 +1606,8 @@ export default function App() {
             onNext={handleNext}
           />
         )}
-        {screen === "final" && player && (
-          <FinalScreen key="final" player={player} roundResults={roundResults} onReplay={handleReplay} />
+        {screen === "final" && player && gameId && (
+          <FinalScreen key="final" player={player} gameId={gameId} roundResults={roundResults} onReplay={handleReplay} />
         )}
         {screen === "admin" && <AdminScreen key="admin" onBack={() => setScreen("start")} />}
       </AnimatePresence>
