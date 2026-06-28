@@ -359,10 +359,23 @@ function StartScreen({ onStart, onAdmin }: { onStart: () => void; onAdmin: () =>
 // AVATAR SCREEN
 // ─────────────────────────────────────────────────────────────
 
-function AvatarScreen({ onStart }: { onStart: (name: string, avatar: AvatarType) => void }) {
+function AvatarScreen({
+  onStart,
+  error,
+  onErrorClear,
+}: {
+  onStart: (name: string, avatar: AvatarType) => void;
+  error?: string | null;
+  onErrorClear?: () => void;
+}) {
   const [name, setName] = useState("");
   const [selected, setSelected] = useState<AvatarType | null>(null);
   const canGo = name.trim().length > 0 && selected !== null;
+  const nameRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (error) nameRef.current?.focus();
+  }, [error]);
 
   return (
     <motion.div
@@ -385,20 +398,27 @@ function AvatarScreen({ onStart }: { onStart: (name: string, avatar: AvatarType)
         <div className="mb-8">
           <label className="font-code text-xs tracking-[0.25em] block mb-2" style={{ color: "#FEE600" }}>Name</label>
           <input
+            ref={nameRef}
             type="text"
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={e => {
+              setName(e.target.value);
+              if (error) onErrorClear?.();
+            }}
             placeholder="CODENAME EINGEBEN..."
-            maxLength={20}
+            maxLength={30}
             className="w-full py-3 px-4 font-code text-base text-foreground tracking-wider focus:outline-none placeholder:opacity-30"
             style={{
               background: "#1C1E1C",
-              border: "1px solid rgba(254,230,0,0.2)",
+              border: `1px solid ${error ? "#ef4444" : "rgba(254,230,0,0.2)"}`,
               caretColor: "#FEE600",
             }}
             onFocus={e => (e.currentTarget.style.borderColor = "#FEE600")}
-            onBlur={e => (e.currentTarget.style.borderColor = "rgba(254,230,0,0.2)")}
+            onBlur={e => (e.currentTarget.style.borderColor = error ? "#ef4444" : "rgba(254,230,0,0.2)")}
           />
+          {error && (
+            <p className="font-code text-xs mt-1.5" style={{ color: "#ef4444" }}>{error}</p>
+          )}
         </div>
 
         {/* Avatar selection */}
@@ -1693,9 +1713,8 @@ export default function App() {
         {screen === "start" && (
           <StartScreen key="start" onStart={() => setScreen("avatar")} onAdmin={() => setScreen("admin")} />
         )}
-        {screen === "avatar" && <AvatarScreen key="avatar" onStart={handleStartGame} />}
-        {error && screen === "avatar" && (
-          <div className="fixed top-4 left-4 bg-red-500 text-white p-4 rounded">{error}</div>
+        {screen === "avatar" && (
+          <AvatarScreen key="avatar" onStart={handleStartGame} error={error} onErrorClear={() => setError(null)} />
         )}
         {screen === "game" && gameId && (
           <GameScreen key={`game-${currentRound}`} image={currentImage} gameId={gameId} taskIndex={currentRound} round={currentRound + 1} onRoundEnd={handleRoundEnd} />

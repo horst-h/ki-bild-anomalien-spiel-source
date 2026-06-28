@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:3001/api";
+const BASE_URL = "/api";
 
 export interface GameStartResponse {
   gameId: string;
@@ -65,7 +65,15 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ playerName, avatarLevel }),
     });
-    if (!res.ok) throw new Error(`Game start failed: ${res.statusText}`);
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      const msg =
+        typeof body?.error === "string"
+          ? body.error
+          : (Object.values(body?.error?.fieldErrors ?? {}) as string[][]).flat().join(", ") ||
+            res.statusText;
+      throw new Error(msg);
+    }
     return res.json();
   },
 

@@ -10,7 +10,10 @@ import { checkPlayerName } from "../services/nameCheck.js";
 export const gameRouter = Router();
 
 const StartGameSchema = z.object({
-  playerName: z.string().min(2).max(30),
+  playerName: z
+    .string()
+    .min(2, "Name muss mindestens 2 Zeichen lang sein")
+    .max(30, "Name darf höchstens 30 Zeichen lang sein"),
   avatarLevel: z.string().min(1),
 });
 
