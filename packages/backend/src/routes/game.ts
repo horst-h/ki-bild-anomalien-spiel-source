@@ -39,7 +39,11 @@ gameRouter.post("/", async (req, res) => {
     usePerspective: Boolean(process.env.PERSPECTIVE_API_KEY),
   });
   if (nameCheck.verdict === "blocked") {
-    res.status(400).json({ error: "Name nicht erlaubt" });
+    const message =
+      nameCheck.stage === "impersonation"
+        ? "Dieser Name ist für Systembegriffe reserviert"
+        : "Dieser Name ist leider nicht erlaubt";
+    res.status(400).json({ error: message });
     return;
   }
   // verdict === "review": Perspective-API nicht erreichbar → Name durchlassen,

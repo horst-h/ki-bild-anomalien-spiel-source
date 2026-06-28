@@ -12,7 +12,7 @@ import { api } from "../api";
 // ─────────────────────────────────────────────────────────────
 
 type Screen = "start" | "avatar" | "game" | "round-result" | "final" | "admin";
-type AvatarType = "jungfuchs" | "erzfuchs";
+type AvatarType = "jungfuchs" | "waldfuchs" | "erzfuchs";
 
 interface AnomalyZone {
   id: string;
@@ -137,6 +137,7 @@ const GAME_IMAGES: GameImage[] = [
 
 const AVATAR_DEFS = {
   jungfuchs: { name: "Jungfuchs", desc: "Einstieg · Kinderfreundliche Szenen", color: "#00FF41" },
+  waldfuchs: { name: "Waldfuchs", desc: "Standard · Allgemeine Bilder", color: "#FEE600" },
   erzfuchs: { name: "Erzfuchs", desc: "Experte · Anspruchsvolle KI-Bilder", color: "#8A2BE2" },
 };
 
@@ -369,8 +370,8 @@ function AvatarScreen({
   onErrorClear?: () => void;
 }) {
   const [name, setName] = useState("");
-  const [selected, setSelected] = useState<AvatarType | null>(null);
-  const canGo = name.trim().length > 0 && selected !== null;
+  const [selected, setSelected] = useState<AvatarType>("waldfuchs");
+  const canGo = name.trim().length > 0;
   const nameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -399,6 +400,7 @@ function AvatarScreen({
           <label className="font-code text-xs tracking-[0.25em] block mb-2" style={{ color: "#FEE600" }}>Name</label>
           <input
             ref={nameRef}
+            id="playerName"
             type="text"
             value={name}
             onChange={e => {
@@ -426,7 +428,7 @@ function AvatarScreen({
           <label className="font-code text-xs tracking-[0.25em] block mb-4" style={{ color: "#FEE600" }}>
             ERFAHRUNGS-KLASSE WÄHLEN
           </label>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             {(Object.entries(AVATAR_DEFS) as [AvatarType, typeof AVATAR_DEFS[AvatarType]][]).map(([key, def]) => {
               const active = selected === key;
               return (
@@ -500,7 +502,7 @@ function AvatarScreen({
             border: `1px solid ${canGo ? "#FEE600" : "rgba(255,255,255,0.08)"}`,
           }}
         >
-          {canGo ? "LOS GEHT`S →" : "Spiel starten"}
+          {canGo ? "Los geht's!" : "Spiel starten"}
         </motion.button>
       </div>
     </motion.div>
