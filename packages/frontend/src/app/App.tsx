@@ -40,6 +40,7 @@ interface RoundResult {
   timeLimit: number;
   foundZoneIds: string[];
   markerPositions: Array<{ id: number; x: number; y: number }>;
+  resolution?: any; // Real resolution from API
 }
 
 
@@ -571,7 +572,8 @@ function GameScreen({
           timeLeft: tl,
           timeLimit: image.timeLimit,
           foundZoneIds,
-          markerPositions: ms.map(m => ({ id: m.id, x: m.x, y: m.y }))
+          markerPositions: ms.map(m => ({ id: m.id, x: m.x, y: m.y })),
+          resolution: finishResponse.resolution // Store real resolution from API
         });
       } catch (err) {
         console.error("Failed to finish task:", err);
@@ -1596,6 +1598,7 @@ export default function App() {
   const [taskCount, setTaskCount] = useState(TOTAL_ROUNDS);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastResolution, setLastResolution] = useState<any>(null);
 
   async function handleStartGame(name: string, avatar: AvatarType) {
     setLoading(true);
