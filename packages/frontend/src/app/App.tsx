@@ -917,7 +917,14 @@ function RoundResultScreen({
   }, [gameId, taskIndex]);
 
   const displayImageUrl = taskData?.imageUrl ? `http://localhost:3001${taskData.imageUrl}` : image.src;
-  const resolution = result.resolution?.areas || [];
+
+  // Use real resolution if available, fallback to mock data
+  const resolution = result.resolution?.areas || image.zones.map(z => ({
+    id: z.id,
+    polygon: z.pts.map(([x, y]: [number, number]) => [x / 100, y / 100]),
+    explanation: z.explanation,
+    found: result.foundZoneIds.includes(z.id),
+  }));
 
   return (
     <motion.div
