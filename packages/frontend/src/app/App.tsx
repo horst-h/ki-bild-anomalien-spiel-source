@@ -499,10 +499,14 @@ interface Marker {
 
 function GameScreen({
   image,
+  gameId,
+  taskIndex,
   round,
   onRoundEnd,
 }: {
   image: GameImage;
+  gameId: string;
+  taskIndex: number;
   round: number;
   onRoundEnd: (result: RoundResult) => void;
 }) {
@@ -513,6 +517,18 @@ function GameScreen({
   const doneRef = useRef(false);
   const markersRef = useRef<Marker[]>([]);
   markersRef.current = markers;
+
+  // Load task data from API on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const task = await api.getTask(gameId, taskIndex);
+        // Update image with real task data if needed
+      } catch (err) {
+        console.error("Failed to load task:", err);
+      }
+    })();
+  }, [gameId, taskIndex]);
 
   // Find which zone a point falls in, ignoring zones already claimed by other markers
   function findZone(x: number, y: number, excludeMarkerId?: number): string | null {
@@ -529,17 +545,39 @@ function GameScreen({
   }
 
   const endRound = useCallback(
-    (tl: number) => {
+    async (tl: number) => {
       if (doneRef.current) return;
       doneRef.current = true;
       const ms = markersRef.current;
-      const foundZoneIds = [...new Set(ms.map(m => m.zoneId).filter(Boolean) as string[])];
-      const found = foundZoneIds.length;
-      const misses = ms.filter(m => !m.zoneId).length;
-      const score = calcScore(found, image.zones.length, tl, image.timeLimit, misses, image.zones.length);
-      onRoundEnd({ score, found, total: image.zones.length, misses, timeLeft: tl, timeLimit: image.timeLimit, foundZoneIds, markerPositions: ms.map(m => ({ id: m.id, x: m.x, y: m.y })) });
+
+      try {
+        // Call API to finish task and get score/resolution
+        const finishResponse = await api.finishTask(gameId, taskIndex, tl, false);
+        const foundZoneIds = finishResponse.resolution.areas.filter(a => a.found).map(a => a.id);
+        const found = foundZoneIds.length;
+        const misses = ms.filter(m => !m.zoneId).length;
+
+        onRoundEnd({
+          score: finishResponse.score,
+          found,
+          total: image.zones.length,
+          misses,
+          timeLeft: tl,
+          timeLimit: image.timeLimit,
+          foundZoneIds,
+          markerPositions: ms.map(m => ({ id: m.id, x: m.x, y: m.y }))
+        });
+      } catch (err) {
+        console.error("Failed to finish task:", err);
+        // Fallback to local calculation
+        const foundZoneIds = [...new Set(ms.map(m => m.zoneId).filter(Boolean) as string[])];
+        const found = foundZoneIds.length;
+        const misses = ms.filter(m => !m.zoneId).length;
+        const score = calcScore(found, image.zones.length, tl, image.timeLimit, misses, image.zones.length);
+        onRoundEnd({ score, found, total: image.zones.length, misses, timeLeft: tl, timeLimit: image.timeLimit, foundZoneIds, markerPositions: ms.map(m => ({ id: m.id, x: m.x, y: m.y })) });
+      }
     },
-    [image, onRoundEnd]
+    [image, gameId, taskIndex, onRoundEnd]
   );
 
   // Timer
@@ -1049,15 +1087,34 @@ function RoundResultScreen({
 
 function FinalScreen({
   player,
+  gameId,
   roundResults,
   onReplay,
 }: {
   player: { name: string; avatar: AvatarType };
+  gameId: string;
   roundResults: RoundResult[];
   onReplay: () => void;
 }) {
-  const totalScore = roundResults.reduce((s, r) => s + r.score, 0);
-  const totalFound = roundResults.reduce((s, r) => s + r.found, 0);
+  const [summary, setSummary] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Load summary from API
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await api.getSummary(gameId);
+        setSummary(data);
+      } catch (err) {
+        console.error("Failed to load summary:", err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [gameId]);
+
+  const totalScore = summary?.totalScore ?? roundResults.reduce((s, r) => s + r.score, 0);
+  const totalFound = summary?.totalHits ?? roundResults.reduce((s, r) => s + r.found, 0);
   const totalZones = roundResults.reduce((s, r) => s + r.total, 0);
 
   const board = [...MOCK_BOARD, { name: player.name, avatar: player.avatar, score: totalScore }].sort(
