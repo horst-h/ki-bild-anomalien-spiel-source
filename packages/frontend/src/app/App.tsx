@@ -787,6 +787,7 @@ function GameScreen({
 
             {/* Interaction overlay: cursor + markers */}
             <div
+              data-testid="game-overlay"
               className="absolute inset-0"
               style={{ cursor: "none" }}
               onClick={handleOverlayClick}
