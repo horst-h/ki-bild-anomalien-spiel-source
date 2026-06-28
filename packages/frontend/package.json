@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "dev:e2e": "BACKEND_PORT=3099 vite --port 5174"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
