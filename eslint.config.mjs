@@ -41,6 +41,7 @@ export default tseslint.config(
       ...reactHooksPlugin.configs.recommended.rules,
       "react/react-in-jsx-scope": "off",
       "react/no-unescaped-entities": "warn",
+      "react/prop-types": "off",
     },
     settings: {
       react: { version: "detect" },
