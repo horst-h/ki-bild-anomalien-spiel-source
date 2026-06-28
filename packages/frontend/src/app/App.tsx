@@ -917,14 +917,7 @@ function RoundResultScreen({
   }, [gameId, taskIndex]);
 
   const displayImageUrl = taskData?.imageUrl ? `http://localhost:3001${taskData.imageUrl}` : image.src;
-
-  // Use real resolution if available, fallback to mock data
-  const resolution = result.resolution?.areas || image.zones.map(z => ({
-    id: z.id,
-    polygon: z.pts.map(([x, y]: [number, number]) => [x / 100, y / 100]),
-    explanation: z.explanation,
-    found: result.foundZoneIds.includes(z.id),
-  }));
+  const foundZoneIds = result.foundZoneIds || [];
 
   return (
     <motion.div
@@ -972,14 +965,15 @@ function RoundResultScreen({
                 style={{ border: "1px solid rgba(254,230,0,0.15)" }}
               />
 
-              {/* Polygon overlays from real API resolution */}
-              {resolution.map(area => {
-                const col = area.found ? "#00FF41" : "#FF6400";
-                const fill = area.found ? "rgba(0,255,65,0.18)" : "rgba(255,100,0,0.18)";
-                const border = area.found ? `rgba(0,255,65,0.9)` : `rgba(255,100,0,0.9)`;
-                const clipPath = `polygon(${area.polygon.map(([x, y]: [number, number]) => `${x * 100}% ${y * 100}%`).join(", ")})`;
+              {/* Polygon overlays */}
+              {image.zones.map(zone => {
+                const found = foundZoneIds.includes(zone.id);
+                const col = found ? "#00FF41" : "#FF6400";
+                const fill = found ? "rgba(0,255,65,0.18)" : "rgba(255,100,0,0.18)";
+                const border = found ? `rgba(0,255,65,0.9)` : `rgba(255,100,0,0.9)`;
+                const clipPath = `polygon(${zone.pts.map(([x, y]) => `${x}% ${y}%`).join(", ")})`;
                 return (
-                  <div key={area.id} className="absolute inset-0 pointer-events-none" style={{ clipPath, background: fill, filter: `drop-shadow(0 0 1.5px ${border}) drop-shadow(0 0 0.5px ${border})` }} />
+                  <div key={zone.id} className="absolute inset-0 pointer-events-none" style={{ clipPath, background: fill, filter: `drop-shadow(0 0 1.5px ${border}) drop-shadow(0 0 0.5px ${border})` }} />
                 );
               })}
 
@@ -1016,14 +1010,14 @@ function RoundResultScreen({
                 </div>
               ))}
 
-              {/* Zone numbered circles from real API resolution */}
-              {resolution.map((area, i) => {
-                const cx = area.polygon.reduce((s: number, [x]: [number, number]) => s + x, 0) / area.polygon.length * 100;
-                const cy = area.polygon.reduce((s: number, [, y]: [number, number]) => s + y, 0) / area.polygon.length * 100;
-                const col = area.found ? "#00FF41" : "#FF6400";
+              {/* Zone numbered circles */}
+              {image.zones.map((zone, i) => {
+                const found = foundZoneIds.includes(zone.id);
+                const [cx, cy] = polyCenter(zone.pts);
+                const col = found ? "#00FF41" : "#FF6400";
                 return (
                   <div
-                    key={area.id}
+                    key={zone.id}
                     style={{
                       position: "absolute",
                       left: `${cx}%`,
@@ -1064,17 +1058,18 @@ function RoundResultScreen({
           </p>
 
           <div className="space-y-3">
-            {resolution.map((area, i) => {
-              const col = area.found ? "#00FF41" : "#FF6400";
+            {image.zones.map((zone, i) => {
+              const found = foundZoneIds.includes(zone.id);
+              const col = found ? "#00FF41" : "#FF6400";
               return (
                 <motion.div
-                  key={area.id}
+                  key={zone.id}
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.12 }}
                   className="p-3"
                   style={{
-                    background: area.found ? "rgba(0,255,65,0.05)" : "rgba(255,100,0,0.05)",
+                    background: found ? "rgba(0,255,65,0.05)" : "rgba(255,100,0,0.05)",
                     border: `1px solid ${col}40`,
                   }}
                 >
@@ -1090,10 +1085,10 @@ function RoundResultScreen({
                       {i + 1}
                     </div>
                     <span className="font-code text-sm font-bold" style={{ color: col }}>
-                      Anomalie {i + 1}
+                      {zone.label}
                     </span>
                   </div>
-                  <p className="font-code text-sm leading-relaxed text-muted-foreground pl-9">{area.explanation}</p>
+                  <p className="font-code text-sm leading-relaxed text-muted-foreground pl-9">{zone.explanation}</p>
                 </motion.div>
               );
             })}
