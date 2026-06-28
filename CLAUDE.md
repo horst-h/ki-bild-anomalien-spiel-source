@@ -16,6 +16,9 @@ npm-Workspaces-Monorepo:
   mit `sharp`
 - `packages/shared` – gemeinsam genutzte Zod-Schemas (Frontend + Backend)
 
+## Allowed Tools
+- bash: npm install, npm run, git add, git commit, mkdir, cp, mv
+
 ## Kritisches Architekturprinzip – unbedingt beachten
 
 **Anomalie-Polygone und Erklärungen eines Bildes dürfen niemals vor

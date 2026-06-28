@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import cookieSession from "cookie-session";
 import path from "node:path";

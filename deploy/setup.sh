@@ -57,15 +57,25 @@ fi
 echo "=== 5. .env anlegen (falls nicht vorhanden) ==="
 if [ ! -f "$APP_DIR/.env" ]; then
   cp "$APP_DIR/.env.example" "$APP_DIR/.env"
-  # Zufällige Secrets generieren
-  sed -i "s/ADMIN_PASSWORD=changeme/ADMIN_PASSWORD=$(openssl rand -base64 16)/" "$APP_DIR/.env"
-  sed -i "s/SESSION_SECRET=dev-secret-change-me/SESSION_SECRET=$(openssl rand -base64 32)/" "$APP_DIR/.env"
+  # Zufällige Secrets generieren (hex = keine Sonderzeichen, sicher als sed-Ersetzung)
+  ADMIN_PW=$(openssl rand -hex 16)
+  SESSION_SEC=$(openssl rand -hex 32)
+  sed -i "s/ADMIN_PASSWORD=changeme/ADMIN_PASSWORD=$ADMIN_PW/" "$APP_DIR/.env"
+  sed -i "s/SESSION_SECRET=dev-secret-change-me/SESSION_SECRET=$SESSION_SEC/" "$APP_DIR/.env"
   chown "$DEPLOY_USER:$DEPLOY_USER" "$APP_DIR/.env"
   chmod 640 "$APP_DIR/.env"
   echo "WICHTIG: $APP_DIR/.env anlegen und ADMIN_PASSWORD + SESSION_SECRET setzen!"
 fi
 
-echo "=== 6. Caddy installieren ==="
+echo "=== 6. Firewall: Ports 80 und 443 öffnen ==="
+if command -v ufw &>/dev/null; then
+  ufw allow 80/tcp
+  ufw allow 443/tcp
+  ufw allow OpenSSH
+  echo "UFW-Regeln gesetzt."
+fi
+
+echo "=== 7. Caddy installieren ==="
 if ! command -v caddy &>/dev/null; then
   apt-get install -y -qq debian-keyring debian-archive-keyring apt-transport-https
   curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
@@ -79,7 +89,7 @@ else
   echo "Caddy bereits vorhanden: $(caddy version)"
 fi
 
-echo "=== 7. Caddy konfigurieren ==="
+echo "=== 8. Caddy konfigurieren ==="
 if [ -n "$DOMAIN" ]; then
   cat > /etc/caddy/Caddyfile <<EOF
 ${DOMAIN} {
@@ -87,11 +97,21 @@ ${DOMAIN} {
 }
 EOF
 else
-  cp "$APP_DIR/Caddyfile" /etc/caddy/Caddyfile
+  echo "WARNUNG: DOMAIN nicht gesetzt. Caddyfile manuell bearbeiten:"
+  echo "  nano /etc/caddy/Caddyfile"
+  echo "  systemctl restart caddy"
 fi
-systemctl reload caddy || systemctl restart caddy
 
-echo "=== 8. Backup-Cronjob einrichten ==="
+echo "Caddyfile-Inhalt:"
+cat /etc/caddy/Caddyfile
+
+caddy validate --config /etc/caddy/Caddyfile && \
+  (systemctl reload caddy 2>/dev/null || systemctl restart caddy) && \
+  echo "Caddy läuft." || \
+  echo "WARNUNG: Caddy konnte nicht gestartet werden (DNS noch nicht eingerichtet?)."  \
+  "Nach DNS-Propagation: systemctl restart caddy"
+
+echo "=== 9. Backup-Cronjob einrichten ==="
 CRON_LINE="0 3 * * * $DEPLOY_USER $APP_DIR/deploy/backup.sh >> /var/log/ki-backup.log 2>&1"
 if ! grep -qF "backup.sh" /etc/cron.d/ki-backup 2>/dev/null; then
   echo "$CRON_LINE" > /etc/cron.d/ki-backup

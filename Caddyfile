@@ -1,3 +1,6 @@
-{$DOMAIN} {
+# Platzhalter – wird durch deploy/setup.sh mit der echten Domain überschrieben.
+# Für manuelle Einrichtung: diese Zeile durch die Domain ersetzen.
+# Beispiel: ki-spiel.meine-domain.de
+deine-domain.de {
     reverse_proxy localhost:3001
 }
