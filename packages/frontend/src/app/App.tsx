@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import foxHero from "@/imports/image-2.png";
 import foxAvatar from "@/imports/image_1.png";
 import foxAvatarErzfuchs from "@/imports/image_2.png";
-import { Clock, Target, X, Check, Trophy, RotateCcw, ChevronRight, Crosshair, AlertTriangle, Info } from "lucide-react";
+import { Clock, Target, X, Check, Trophy, RotateCcw, ChevronRight, Crosshair, AlertTriangle, Info, Trash2 } from "lucide-react";
 import { api } from "../api";
 
 // ─────────────────────────────────────────────────────────────
@@ -43,6 +43,17 @@ interface RoundResult {
   resolution?: any; // Real resolution from API
 }
 
+
+interface AdminCatalogImage {
+  id: string;
+  title: string;
+  image_path: string;
+  category: string;
+  status: string;
+  time_limit_seconds: number;
+  max_wrong_attempts: number;
+  anomalyAreas: { id: string }[];
+}
 
 // ─────────────────────────────────────────────────────────────
 // GAME DATA
@@ -1334,6 +1345,72 @@ function AdminScreen({ onBack }: { onBack: () => void }) {
   const board = [...MOCK_BOARD].sort((a, b) => b.score - a.score);
   const rankColors = ["#FEE600", "#C0C0C0", "#CD7F32"];
 
+  const [authState, setAuthState] = useState<"login" | "catalog">("login");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [images, setImages] = useState<AdminCatalogImage[]>([]);
+  const [imagesLoading, setImagesLoading] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  async function loadImages() {
+    setImagesLoading(true);
+    const res = await fetch("/api/admin/images", { credentials: "include" });
+    setImagesLoading(false);
+    if (res.ok) setImages(await res.json());
+  }
+
+  async function login() {
+    setLoginLoading(true);
+    setLoginError(null);
+    const res = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ password }),
+    });
+    setLoginLoading(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      setLoginError(body?.error ?? "Anmeldung fehlgeschlagen");
+      return;
+    }
+    setAuthState("catalog");
+    loadImages();
+  }
+
+  async function deleteImage(id: string) {
+    setDeletingId(id);
+    setDeleteError(null);
+    const res = await fetch(`/api/admin/images/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    setDeletingId(null);
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      setDeleteError(body?.error ?? "Löschen fehlgeschlagen");
+      return;
+    }
+    setConfirmDeleteId(null);
+    setImages(prev => prev.filter(img => img.id !== id));
+  }
+
+  async function logout() {
+    await fetch("/api/admin/logout", { method: "POST", credentials: "include" });
+    setAuthState("login");
+    setPassword("");
+    setImages([]);
+  }
+
+  const statusStyle: Record<string, { color: string; bg: string; border: string; label: string }> = {
+    published: { color: "#00FF41", bg: "rgba(0,255,65,0.08)", border: "rgba(0,255,65,0.3)", label: "PUBLISHED" },
+    draft:     { color: "#FEE600", bg: "rgba(254,230,0,0.08)", border: "rgba(254,230,0,0.3)", label: "DRAFT" },
+    archived:  { color: "#A8ABA7", bg: "rgba(168,171,167,0.08)", border: "rgba(168,171,167,0.2)", label: "ARCHIVIERT" },
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -1351,130 +1428,183 @@ function AdminScreen({ onBack }: { onBack: () => void }) {
               KONTROLLE
             </h2>
           </div>
-          <button
-            onClick={onBack}
-            className="font-code text-sm tracking-widest text-muted-foreground px-4 py-2 transition-all"
-            style={{ border: "1px solid rgba(254,230,0,0.2)" }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = "#FEE600";
-              (e.currentTarget as HTMLButtonElement).style.color = "#FEE600";
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(254,230,0,0.2)";
-              (e.currentTarget as HTMLButtonElement).style.color = "#A8ABA7";
-            }}
-          >
-            ← ZURÜCK
-          </button>
-        </div>
-
-        {/* Leaderboard */}
-        <div className="mb-8" style={{ border: "1px solid rgba(254,230,0,0.15)" }}>
-          <div
-            className="px-4 py-3 flex items-center gap-2"
-            style={{ background: "#1C1E1C", borderBottom: "1px solid rgba(254,230,0,0.15)" }}
-          >
-            <Trophy size={14} style={{ color: "#FEE600" }} />
-            <span className="font-code text-xs tracking-widest" style={{ color: "#FEE600" }}>
-              BESTENLISTE — ALLE SPIELER
-            </span>
-          </div>
-          <table className="w-full">
-            <thead>
-              <tr style={{ borderBottom: "1px solid rgba(254,230,0,0.1)" }}>
-                {["RANG", "AVATAR", "OPERATOR", "KLASSE", "PUNKTE"].map(h => (
-                  <th key={h} className="px-4 py-2 text-left font-code text-xs text-muted-foreground">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {board.map((e, i) => (
-                <tr
-                  key={i}
-                  style={{ borderBottom: i < board.length - 1 ? "1px solid rgba(254,230,0,0.06)" : undefined }}
-                >
-                  <td className="px-4 py-3">
-                    <span
-                      className="font-display font-black text-xl"
-                      style={{ color: rankColors[i] ?? "#A8ABA7" }}
-                    >
-                      #{i + 1}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <FoxIcon type={e.avatar} size={32} />
-                  </td>
-                  <td className="px-4 py-3 font-code text-sm text-foreground">{e.name}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className="font-code text-xs px-2 py-0.5 uppercase tracking-widest"
-                      style={{
-                        color: AVATAR_DEFS[e.avatar].color,
-                        border: `1px solid ${AVATAR_DEFS[e.avatar].color}50`,
-                      }}
-                    >
-                      {AVATAR_DEFS[e.avatar].name}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 font-display font-bold text-xl text-foreground">{e.score}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Image management */}
-        <div style={{ border: "1px solid rgba(138,43,226,0.4)", background: "rgba(138,43,226,0.05)" }}>
-          <div
-            className="px-4 py-3 flex items-center gap-2"
-            style={{ borderBottom: "1px solid rgba(138,43,226,0.3)", background: "rgba(138,43,226,0.08)" }}
-          >
-            <Info size={14} style={{ color: "#8A2BE2" }} />
-            <span className="font-code text-xs tracking-widest" style={{ color: "#8A2BE2" }}>
-              BILD-VERWALTUNG — MOCK-DATEN
-            </span>
-          </div>
-          <div className="p-4 grid grid-cols-3 gap-3">
-            {GAME_IMAGES.map(img => (
-              <div
-                key={img.id}
-                className="overflow-hidden"
-                style={{ border: "1px solid rgba(254,230,0,0.12)" }}
+          <div className="flex items-center gap-2">
+            {authState === "catalog" && (
+              <button
+                onClick={logout}
+                className="font-code text-xs tracking-widest text-muted-foreground px-3 py-2 transition-all"
+                style={{ border: "1px solid rgba(255,80,80,0.25)" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#FF5050"; (e.currentTarget as HTMLButtonElement).style.color = "#FF5050"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,80,80,0.25)"; (e.currentTarget as HTMLButtonElement).style.color = "#A8ABA7"; }}
               >
-                <img src={img.src} alt={img.title} className="w-full h-24 object-cover" />
-                <div className="p-2">
-                  <p className="font-code text-xs text-muted-foreground truncate">{img.id}</p>
-                  <div className="flex items-center justify-between mt-1">
-                    <span
-                      className="font-code text-xs uppercase tracking-wider"
-                      style={{ color: "#FEE600" }}
-                    >
-                      {img.level}
-                    </span>
-                    <span className="font-code text-xs text-muted-foreground">
-                      {img.zones.length} Zonen · {img.timeLimit}s
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 mt-1.5">
-                    <span
-                      className="font-code text-xs px-1.5 py-0.5"
-                      style={{ background: "rgba(0,255,65,0.1)", color: "#00FF41", border: "1px solid rgba(0,255,65,0.3)" }}
-                    >
-                      PUBLISHED
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="px-4 pb-4">
-            <p className="font-code text-xs text-muted-foreground opacity-60">
-              Bildverwaltung, Anomalie-Editor und Einstellungen werden in Phase 2 implementiert.
-            </p>
+                ABMELDEN
+              </button>
+            )}
+            <button
+              onClick={onBack}
+              className="font-code text-sm tracking-widest text-muted-foreground px-4 py-2 transition-all"
+              style={{ border: "1px solid rgba(254,230,0,0.2)" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#FEE600"; (e.currentTarget as HTMLButtonElement).style.color = "#FEE600"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(254,230,0,0.2)"; (e.currentTarget as HTMLButtonElement).style.color = "#A8ABA7"; }}
+            >
+              ← ZURÜCK
+            </button>
           </div>
         </div>
+
+        {/* Login */}
+        {authState === "login" && (
+          <div className="mb-8" style={{ border: "1px solid rgba(254,230,0,0.2)" }}>
+            <div className="px-4 py-3" style={{ background: "#1C1E1C", borderBottom: "1px solid rgba(254,230,0,0.15)" }}>
+              <span className="font-code text-xs tracking-widest" style={{ color: "#FEE600" }}>ZUGANG // PASSWORT ERFORDERLICH</span>
+            </div>
+            <div className="p-6 flex flex-col gap-3 max-w-sm">
+              <input
+                type="password"
+                value={password}
+                onChange={e => { setPassword(e.target.value); setLoginError(null); }}
+                onKeyDown={e => e.key === "Enter" && login()}
+                placeholder="Passwort"
+                className="font-code text-sm bg-transparent px-3 py-2 text-foreground outline-none"
+                style={{ border: `1px solid ${loginError ? "#FF5050" : "rgba(254,230,0,0.25)"}` }}
+                autoFocus
+              />
+              {loginError && <p className="font-code text-xs" style={{ color: "#FF5050" }}>{loginError}</p>}
+              <button
+                onClick={login}
+                disabled={loginLoading || !password}
+                className="font-code text-xs tracking-widest px-4 py-2 transition-all disabled:opacity-40"
+                style={{ background: "rgba(254,230,0,0.1)", border: "1px solid #FEE600", color: "#FEE600" }}
+              >
+                {loginLoading ? "PRÜFE …" : "ANMELDEN →"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {authState === "catalog" && (
+          <>
+            {/* Leaderboard */}
+            <div className="mb-8" style={{ border: "1px solid rgba(254,230,0,0.15)" }}>
+              <div className="px-4 py-3 flex items-center gap-2" style={{ background: "#1C1E1C", borderBottom: "1px solid rgba(254,230,0,0.15)" }}>
+                <Trophy size={14} style={{ color: "#FEE600" }} />
+                <span className="font-code text-xs tracking-widest" style={{ color: "#FEE600" }}>BESTENLISTE — ALLE SPIELER</span>
+              </div>
+              <table className="w-full">
+                <thead>
+                  <tr style={{ borderBottom: "1px solid rgba(254,230,0,0.1)" }}>
+                    {["RANG", "AVATAR", "OPERATOR", "KLASSE", "PUNKTE"].map(h => (
+                      <th key={h} className="px-4 py-2 text-left font-code text-xs text-muted-foreground">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {board.map((e, i) => (
+                    <tr key={i} style={{ borderBottom: i < board.length - 1 ? "1px solid rgba(254,230,0,0.06)" : undefined }}>
+                      <td className="px-4 py-3">
+                        <span className="font-display font-black text-xl" style={{ color: rankColors[i] ?? "#A8ABA7" }}>#{i + 1}</span>
+                      </td>
+                      <td className="px-4 py-3"><FoxIcon type={e.avatar} size={32} /></td>
+                      <td className="px-4 py-3 font-code text-sm text-foreground">{e.name}</td>
+                      <td className="px-4 py-3">
+                        <span className="font-code text-xs px-2 py-0.5 uppercase tracking-widest" style={{ color: AVATAR_DEFS[e.avatar].color, border: `1px solid ${AVATAR_DEFS[e.avatar].color}50` }}>
+                          {AVATAR_DEFS[e.avatar].name}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-display font-bold text-xl text-foreground">{e.score}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Image catalog */}
+            <div style={{ border: "1px solid rgba(138,43,226,0.4)", background: "rgba(138,43,226,0.05)" }}>
+              <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(138,43,226,0.3)", background: "rgba(138,43,226,0.08)" }}>
+                <div className="flex items-center gap-2">
+                  <Info size={14} style={{ color: "#8A2BE2" }} />
+                  <span className="font-code text-xs tracking-widest" style={{ color: "#8A2BE2" }}>BILD-KATALOG — {images.length} EINTRÄGE</span>
+                </div>
+                <button
+                  onClick={loadImages}
+                  className="font-code text-xs tracking-widest text-muted-foreground px-2 py-1"
+                  style={{ border: "1px solid rgba(138,43,226,0.3)" }}
+                >
+                  AKTUALISIEREN
+                </button>
+              </div>
+
+              {deleteError && (
+                <div className="mx-4 mt-4 px-3 py-2 font-code text-xs" style={{ color: "#FF5050", border: "1px solid rgba(255,80,80,0.4)", background: "rgba(255,80,80,0.06)" }}>
+                  {deleteError}
+                </div>
+              )}
+
+              {imagesLoading ? (
+                <div className="p-8 text-center font-code text-xs text-muted-foreground">LADE …</div>
+              ) : images.length === 0 ? (
+                <div className="p-8 text-center font-code text-xs text-muted-foreground">KEINE BILDER VORHANDEN</div>
+              ) : (
+                <div className="p-4 grid grid-cols-3 gap-3">
+                  {images.map(img => {
+                    const s = statusStyle[img.status] ?? statusStyle.archived;
+                    const isConfirming = confirmDeleteId === img.id;
+                    const isDeleting = deletingId === img.id;
+                    return (
+                      <div key={img.id} className="overflow-hidden" style={{ border: "1px solid rgba(254,230,0,0.12)" }}>
+                        <img src={`/images/${img.id}`} alt={img.title} className="w-full h-24 object-cover bg-black/20" />
+                        <div className="p-2">
+                          <p className="font-code text-xs text-foreground truncate font-bold">{img.title}</p>
+                          <p className="font-code text-xs text-muted-foreground truncate opacity-60 mt-0.5">{img.id.slice(0, 8)}…</p>
+                          <div className="flex items-center justify-between mt-1.5">
+                            <span className="font-code text-xs px-1.5 py-0.5" style={{ color: s.color, background: s.bg, border: `1px solid ${s.border}` }}>
+                              {s.label}
+                            </span>
+                            <span className="font-code text-xs text-muted-foreground">
+                              {img.anomalyAreas.length} Z · {img.time_limit_seconds}s
+                            </span>
+                          </div>
+                          <div className="mt-2">
+                            {!isConfirming ? (
+                              <button
+                                onClick={() => { setConfirmDeleteId(img.id); setDeleteError(null); }}
+                                className="w-full flex items-center justify-center gap-1 font-code text-xs py-1 transition-all"
+                                style={{ border: "1px solid rgba(255,80,80,0.25)", color: "#A8ABA7" }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#FF5050"; (e.currentTarget as HTMLButtonElement).style.color = "#FF5050"; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,80,80,0.25)"; (e.currentTarget as HTMLButtonElement).style.color = "#A8ABA7"; }}
+                              >
+                                <Trash2 size={10} /> LÖSCHEN
+                              </button>
+                            ) : (
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => deleteImage(img.id)}
+                                  disabled={isDeleting}
+                                  className="flex-1 font-code text-xs py-1 disabled:opacity-50"
+                                  style={{ background: "rgba(255,80,80,0.15)", border: "1px solid #FF5050", color: "#FF5050" }}
+                                >
+                                  {isDeleting ? "…" : "SICHER?"}
+                                </button>
+                                <button
+                                  onClick={() => setConfirmDeleteId(null)}
+                                  disabled={isDeleting}
+                                  className="flex-1 font-code text-xs py-1"
+                                  style={{ border: "1px solid rgba(254,230,0,0.25)", color: "#A8ABA7" }}
+                                >
+                                  NEIN
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </motion.div>
   );

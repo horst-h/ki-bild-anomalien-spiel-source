@@ -2,7 +2,9 @@ import { Router } from "express";
 import multer from "multer";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { db } from "../../db/client.js";
+import fs from "node:fs";
+import path from "node:path";
+import { db, IMAGES_DIR } from "../../db/client.js";
 import { processAndStoreImage } from "../../services/imageProcessing.js";
 import { requireAdmin } from "../../middleware/adminAuth.js";
 import { polygonsIntersect } from "../../services/geometry.js";
@@ -166,10 +168,29 @@ adminCatalogRouter.post("/:id/publish", (req, res) => {
 
 // --- DELETE /api/admin/images/:id ---
 adminCatalogRouter.delete("/:id", (req, res) => {
-  db.prepare(`UPDATE images SET status = 'archived', updated_at = datetime('now') WHERE id = ?`).run(
-    req.params.id
-  );
-  res.json({ status: "archived" });
+  const image = db.prepare(`SELECT * FROM images WHERE id = ?`).get(req.params.id) as any;
+  if (!image) {
+    res.status(404).json({ error: "Bild nicht gefunden" });
+    return;
+  }
+
+  const inUse = db
+    .prepare(`SELECT COUNT(*) as n FROM game_tasks WHERE image_id = ?`)
+    .get(req.params.id) as { n: number };
+  if (inUse.n > 0) {
+    res.status(409).json({ error: "Bild wird in Spielen verwendet und kann nicht gelöscht werden" });
+    return;
+  }
+
+  db.prepare(`DELETE FROM images WHERE id = ?`).run(req.params.id);
+
+  try {
+    fs.unlinkSync(path.join(IMAGES_DIR, image.image_path));
+  } catch {
+    // Datei fehlt bereits – kein kritischer Fehler
+  }
+
+  res.json({ status: "deleted" });
 });
 
 // --- Hilfsfunktionen ---
