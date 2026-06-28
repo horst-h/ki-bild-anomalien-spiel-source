@@ -10,6 +10,7 @@ import { leaderboardRouter } from "./routes/leaderboard.js";
 import { imagesRouter } from "./routes/images.js";
 import { adminAuthRouter } from "./routes/admin/auth.js";
 import { adminCatalogRouter } from "./routes/admin/catalog.js";
+import { adminLeaderboardRouter } from "./routes/admin/leaderboard.js";
 import { checkPlayerName } from "./services/nameCheck.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -55,7 +56,8 @@ app.use("/images", imagesRouter);
 
 // --- Admin-Bereich ---
 app.use("/api/admin", adminAuthRouter); // /login, /logout (kein Auth-Schutz nötig)
-app.use("/api/admin/images", adminCatalogRouter); // ab hier durch requireAdmin geschützt
+app.use("/api/admin/images", adminCatalogRouter);
+app.use("/api/admin/leaderboard", adminLeaderboardRouter);
 
 // --- Statische Auslieferung des Frontend-Builds (Produktion) ---
 const frontendDist = path.resolve(__dirname, "../../frontend/dist");

@@ -26,7 +26,7 @@ const PointSchema = z.object({ x: z.number().min(0).max(1), y: z.number().min(0)
 const AreaSchema = z.object({
   id: z.string().optional(),
   polygon: z.array(PointSchema).min(3),
-  explanation: z.string().min(1),
+  explanation: z.string(),
 });
 
 const UpdateImageSchema = z.object({
@@ -174,15 +174,30 @@ adminCatalogRouter.delete("/:id", (req, res) => {
     return;
   }
 
-  const inUse = db
-    .prepare(`SELECT COUNT(*) as n FROM game_tasks WHERE image_id = ?`)
+  const activeUse = db
+    .prepare(
+      `SELECT COUNT(*) as n FROM game_tasks gt
+       JOIN games g ON g.id = gt.game_id
+       WHERE gt.image_id = ?
+         AND g.finished_at IS NULL
+         AND g.created_at > datetime('now', '-4 hours')`
+    )
     .get(req.params.id) as { n: number };
-  if (inUse.n > 0) {
-    res.status(409).json({ error: "Bild wird in Spielen verwendet und kann nicht gelöscht werden" });
+  if (activeUse.n > 0) {
+    res.status(409).json({ error: "Bild wird in einem laufenden Spiel verwendet und kann nicht gelöscht werden" });
     return;
   }
 
-  db.prepare(`DELETE FROM images WHERE id = ?`).run(req.params.id);
+  db.transaction(() => {
+    // game_task_hits über area_id bereinigen (kein CASCADE von anomaly_areas)
+    db.prepare(
+      `DELETE FROM game_task_hits
+       WHERE area_id IN (SELECT id FROM anomaly_areas WHERE image_id = ?)`
+    ).run(req.params.id);
+    // abgeschlossene game_tasks bereinigen (image_id hat kein ON DELETE CASCADE)
+    db.prepare(`DELETE FROM game_tasks WHERE image_id = ?`).run(req.params.id);
+    db.prepare(`DELETE FROM images WHERE id = ?`).run(req.params.id);
+  })();
 
   try {
     fs.unlinkSync(path.join(IMAGES_DIR, image.image_path));

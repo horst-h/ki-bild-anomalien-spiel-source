@@ -32,7 +32,7 @@ export interface FinishResponse {
   resolution: {
     areas: Array<{
       id: string;
-      polygon: Array<[number, number]>;
+      polygon: Array<{ x: number; y: number }>;
       explanation: string;
       found: boolean;
     }>;

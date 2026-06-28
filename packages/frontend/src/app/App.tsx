@@ -5,6 +5,8 @@ import foxHero from "@/imports/image-2.png";
 import foxAvatar from "@/imports/image_1.png";
 import foxAvatarErzfuchs from "@/imports/image_2.png";
 import { Clock, Target, X, Check, Trophy, RotateCcw, ChevronRight, Crosshair, AlertTriangle, Info, Trash2 } from "lucide-react";
+import { ScoreScreen } from "./screens/admin/ScoreScreen";
+import { ImagesScreen } from "./screens/admin/ImagesScreen";
 import { api } from "../api";
 
 // ─────────────────────────────────────────────────────────────
@@ -265,7 +267,7 @@ function CornerBrackets({ color = "#FEE600" }: { color?: string }) {
 // START SCREEN
 // ─────────────────────────────────────────────────────────────
 
-function StartScreen({ onStart, onAdmin }: { onStart: () => void; onAdmin: () => void }) {
+function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -341,22 +343,6 @@ function StartScreen({ onStart, onAdmin }: { onStart: () => void; onAdmin: () =>
           >
             SPIEL STARTEN
           </motion.button>
-
-          <button
-            onClick={onAdmin}
-            className="w-64 py-3 font-code text-xs tracking-[0.2em] text-muted-foreground transition-all"
-            style={{ border: "1px solid rgba(254,230,0,0.2)" }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = "#FEE600";
-              (e.currentTarget as HTMLButtonElement).style.color = "#FEE600";
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(254,230,0,0.2)";
-              (e.currentTarget as HTMLButtonElement).style.color = "#A8ABA7";
-            }}
-          >
-            ADMIN ZUGANG
-          </button>
         </div>
 
         <p className="mt-10 font-code text-xs opacity-25" style={{ color: "#FEE600" }}>
@@ -593,32 +579,36 @@ function GameScreen({
       try {
         // Call API to finish task and get score/resolution
         const finishResponse = await api.finishTask(gameId, taskIndex, tl, false);
-        const foundZoneIds = finishResponse.resolution.areas.filter(a => a.found).map(a => a.id);
+        const areas = finishResponse.resolution.areas;
+        const foundZoneIds = areas.filter(a => a.found).map(a => a.id);
         const found = foundZoneIds.length;
+        const total = areas.length;
         const misses = ms.filter(m => !m.zoneId).length;
+        const timeLimitSec = taskData?.timeLimitSeconds ?? image.timeLimit;
 
         onRoundEnd({
           score: finishResponse.score,
           found,
-          total: image.zones.length,
+          total,
           misses,
           timeLeft: tl,
-          timeLimit: image.timeLimit,
+          timeLimit: timeLimitSec,
           foundZoneIds,
           markerPositions: ms.map(m => ({ id: m.id, x: m.x, y: m.y })),
-          resolution: finishResponse.resolution // Store real resolution from API
+          resolution: finishResponse.resolution,
         });
       } catch (err) {
         console.error("Failed to finish task:", err);
-        // Fallback to local calculation
         const foundZoneIds = [...new Set(ms.map(m => m.zoneId).filter(Boolean) as string[])];
         const found = foundZoneIds.length;
+        const total = taskData?.totalAreas ?? image.zones.length;
+        const timeLimitSec = taskData?.timeLimitSeconds ?? image.timeLimit;
         const misses = ms.filter(m => !m.zoneId).length;
-        const score = calcScore(found, image.zones.length, tl, image.timeLimit, misses, image.zones.length);
-        onRoundEnd({ score, found, total: image.zones.length, misses, timeLeft: tl, timeLimit: image.timeLimit, foundZoneIds, markerPositions: ms.map(m => ({ id: m.id, x: m.x, y: m.y })) });
+        const score = calcScore(found, total, tl, timeLimitSec, misses, total);
+        onRoundEnd({ score, found, total, misses, timeLeft: tl, timeLimit: timeLimitSec, foundZoneIds, markerPositions: ms.map(m => ({ id: m.id, x: m.x, y: m.y })) });
       }
     },
-    [image, gameId, taskIndex, onRoundEnd]
+    [image, gameId, taskIndex, onRoundEnd, taskData]
   );
 
   // Timer
@@ -646,7 +636,8 @@ function GameScreen({
 
   async function handleOverlayClick(e: React.MouseEvent<HTMLDivElement>) {
     if (doneRef.current || draggingId !== null) return;
-    if (markers.length >= image.zones.length) return;
+    const totalAreas = taskData?.totalAreas ?? image.zones.length;
+    if (markers.length >= totalAreas) return;
 
     const { x, y } = getRelativePos(e);
     const id = markers.length + 1;
@@ -697,11 +688,12 @@ function GameScreen({
   }
 
   // Derived counts
+  const totalAreas = taskData?.totalAreas ?? image.zones.length;
   const foundCount = new Set(markers.map(m => m.zoneId).filter(Boolean)).size;
-  const ratio = timeLeft / image.timeLimit;
+  const ratio = timeLeft / (taskData?.timeLimitSeconds ?? image.timeLimit);
   const timerColor = ratio > 0.5 ? "#00FF41" : ratio > 0.25 ? "#FEE600" : "#FF4444";
   const timerPulse = ratio <= 0.25;
-  const canPlaceMore = markers.length < image.zones.length && !doneRef.current;
+  const canPlaceMore = markers.length < totalAreas && !doneRef.current;
 
   return (
     <motion.div
@@ -740,7 +732,7 @@ function GameScreen({
           <div className="flex items-center gap-3">
             <span className="font-code text-sm text-muted-foreground tracking-widest">MARKIERUNGEN GESETZT</span>
             <div className="flex gap-2">
-              {Array.from({ length: image.zones.length }).map((_, i) => (
+              {Array.from({ length: totalAreas }).map((_, i) => (
                 <div
                   key={i}
                   style={{
@@ -773,7 +765,7 @@ function GameScreen({
             <Info size={14} style={{ color: "#8A2BE2", marginTop: 1, flexShrink: 0 }} />
             <p className="font-code text-sm leading-relaxed font-[Titillium_Web]" style={{ color: "#A8ABA7" }}>
               <span className="font-bold" style={{ color: "#8A2BE2" }}>SO GEHT'S: </span>
-              Klicke auf verdächtige Stellen im Bild, um Markierungen zu setzen. Du kannst bis zu {image.zones.length} Bereiche markieren und diese vor Ablauf des Timers verschieben. Klicke auf <span style={{ color: "#FEE600" }}>FERTIG</span>, wenn du alle Anomalien gefunden hast.
+              Klicke auf verdächtige Stellen im Bild, um Markierungen zu setzen. Du kannst bis zu {totalAreas} Bereiche markieren und diese vor Ablauf des Timers verschieben. Klicke auf <span style={{ color: "#FEE600" }}>FERTIG</span>, wenn du alle Anomalien gefunden hast.
             </p>
           </div>
         </div>
@@ -881,7 +873,7 @@ function GameScreen({
         style={{ background: "#121414" }}
       >
         <span className="font-code text-sm font-bold tracking-widest px-4 py-2" style={{ color: "#FEE600", border: "1px solid rgba(254,230,0,0.4)" }}>
-          {image.zones.length} ANOMALIEN ZU FINDEN
+          {totalAreas} ANOMALIEN ZU FINDEN
         </span>
 
         <motion.button
@@ -908,7 +900,7 @@ function GameScreen({
         style={{ borderTop: "1px solid rgba(254,230,0,0.08)" }}
       >
         <p className="font-code text-xs text-muted-foreground opacity-60">
-          {markers.length < image.zones.length
+          {markers.length < totalAreas
             ? `MARKIERUNG ${markers.length + 1} SETZEN — VERSCHIEBEN JEDERZEIT MÖGLICH`
             : "ALLE MARKIERUNGEN GESETZT — VERSCHIEBEN ODER FERTIG KLICKEN"}
         </p>
@@ -999,15 +991,13 @@ function RoundResultScreen({
                 style={{ border: "1px solid rgba(254,230,0,0.15)" }}
               />
 
-              {/* Polygon overlays */}
-              {image.zones.map(zone => {
-                const found = foundZoneIds.includes(zone.id);
-                const col = found ? "#00FF41" : "#FF6400";
-                const fill = found ? "rgba(0,255,65,0.18)" : "rgba(255,100,0,0.18)";
-                const border = found ? `rgba(0,255,65,0.9)` : `rgba(255,100,0,0.9)`;
-                const clipPath = `polygon(${zone.pts.map(([x, y]) => `${x}% ${y}%`).join(", ")})`;
+              {/* Polygon overlays — real API resolution */}
+              {result.resolution?.areas.map((area: any) => {
+                const col = area.found ? "#00FF41" : "#FF6400";
+                const fill = area.found ? "rgba(0,255,65,0.18)" : "rgba(255,100,0,0.18)";
+                const clipPath = `polygon(${area.polygon.map((p: any) => `${(p.x * 100).toFixed(2)}% ${(p.y * 100).toFixed(2)}%`).join(", ")})`;
                 return (
-                  <div key={zone.id} className="absolute inset-0 pointer-events-none" style={{ clipPath, background: fill, filter: `drop-shadow(0 0 1.5px ${border}) drop-shadow(0 0 0.5px ${border})` }} />
+                  <div key={area.id} className="absolute inset-0 pointer-events-none" style={{ clipPath, background: fill, filter: `drop-shadow(0 0 1.5px ${col}) drop-shadow(0 0 0.5px ${col})` }} />
                 );
               })}
 
@@ -1044,14 +1034,14 @@ function RoundResultScreen({
                 </div>
               ))}
 
-              {/* Zone numbered circles */}
-              {image.zones.map((zone, i) => {
-                const found = foundZoneIds.includes(zone.id);
-                const [cx, cy] = polyCenter(zone.pts);
-                const col = found ? "#00FF41" : "#FF6400";
+              {/* Zone numbered circles — real API resolution */}
+              {result.resolution?.areas.map((area: any, i: number) => {
+                const col = area.found ? "#00FF41" : "#FF6400";
+                const cx = area.polygon.reduce((s: number, p: any) => s + p.x, 0) / area.polygon.length * 100;
+                const cy = area.polygon.reduce((s: number, p: any) => s + p.y, 0) / area.polygon.length * 100;
                 return (
                   <div
-                    key={zone.id}
+                    key={area.id}
                     style={{
                       position: "absolute",
                       left: `${cx}%`,
@@ -1092,23 +1082,21 @@ function RoundResultScreen({
           </p>
 
           <div className="space-y-3">
-            {image.zones.map((zone, i) => {
-              const found = foundZoneIds.includes(zone.id);
-              const col = found ? "#00FF41" : "#FF6400";
+            {(result.resolution?.areas ?? []).map((area: any, i: number) => {
+              const col = area.found ? "#00FF41" : "#FF6400";
               return (
                 <motion.div
-                  key={zone.id}
+                  key={area.id}
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.12 }}
                   className="p-3"
                   style={{
-                    background: found ? "rgba(0,255,65,0.05)" : "rgba(255,100,0,0.05)",
+                    background: area.found ? "rgba(0,255,65,0.05)" : "rgba(255,100,0,0.05)",
                     border: `1px solid ${col}40`,
                   }}
                 >
                   <div className="flex items-center gap-3 mb-1.5">
-                    {/* Numbered circle */}
                     <div style={{
                       width: 24, height: 24, borderRadius: "50%",
                       background: col, color: "#121414",
@@ -1119,10 +1107,10 @@ function RoundResultScreen({
                       {i + 1}
                     </div>
                     <span className="font-code text-sm font-bold" style={{ color: col }}>
-                      {zone.label}
+                      {area.found ? "GEFUNDEN" : "NICHT GEFUNDEN"}
                     </span>
                   </div>
-                  <p className="font-code text-sm leading-relaxed text-muted-foreground pl-9">{zone.explanation}</p>
+                  <p className="font-code text-sm leading-relaxed text-muted-foreground pl-9">{area.explanation}</p>
                 </motion.div>
               );
             })}
@@ -1341,26 +1329,14 @@ function FinalScreen({
 // ADMIN SCREEN
 // ─────────────────────────────────────────────────────────────
 
-function AdminScreen({ onBack }: { onBack: () => void }) {
-  const board = [...MOCK_BOARD].sort((a, b) => b.score - a.score);
-  const rankColors = ["#FEE600", "#C0C0C0", "#CD7F32"];
+type AdminTab = "scores" | "images";
 
-  const [authState, setAuthState] = useState<"login" | "catalog">("login");
+function AdminScreen({ onBack }: { onBack: () => void }) {
+  const [authState, setAuthState] = useState<"login" | "main">("login");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
-  const [images, setImages] = useState<AdminCatalogImage[]>([]);
-  const [imagesLoading, setImagesLoading] = useState(false);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-
-  async function loadImages() {
-    setImagesLoading(true);
-    const res = await fetch("/api/admin/images", { credentials: "include" });
-    setImagesLoading(false);
-    if (res.ok) setImages(await res.json());
-  }
+  const [activeTab, setActiveTab] = useState<AdminTab>("scores");
 
   async function login() {
     setLoginLoading(true);
@@ -1377,39 +1353,19 @@ function AdminScreen({ onBack }: { onBack: () => void }) {
       setLoginError(body?.error ?? "Anmeldung fehlgeschlagen");
       return;
     }
-    setAuthState("catalog");
-    loadImages();
-  }
-
-  async function deleteImage(id: string) {
-    setDeletingId(id);
-    setDeleteError(null);
-    const res = await fetch(`/api/admin/images/${id}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-    setDeletingId(null);
-    if (!res.ok) {
-      const body = await res.json().catch(() => null);
-      setDeleteError(body?.error ?? "Löschen fehlgeschlagen");
-      return;
-    }
-    setConfirmDeleteId(null);
-    setImages(prev => prev.filter(img => img.id !== id));
+    setAuthState("main");
   }
 
   async function logout() {
     await fetch("/api/admin/logout", { method: "POST", credentials: "include" });
     setAuthState("login");
     setPassword("");
-    setImages([]);
   }
 
-  const statusStyle: Record<string, { color: string; bg: string; border: string; label: string }> = {
-    published: { color: "#00FF41", bg: "rgba(0,255,65,0.08)", border: "rgba(0,255,65,0.3)", label: "PUBLISHED" },
-    draft:     { color: "#FEE600", bg: "rgba(254,230,0,0.08)", border: "rgba(254,230,0,0.3)", label: "DRAFT" },
-    archived:  { color: "#A8ABA7", bg: "rgba(168,171,167,0.08)", border: "rgba(168,171,167,0.2)", label: "ARCHIVIERT" },
-  };
+  const TABS: { id: AdminTab; label: string; color: string }[] = [
+    { id: "scores",  label: "BESTENLISTE", color: "#FEE600" },
+    { id: "images",  label: "BILDER",      color: "#8A2BE2" },
+  ];
 
   return (
     <motion.div
@@ -1417,7 +1373,7 @@ function AdminScreen({ onBack }: { onBack: () => void }) {
       animate={{ opacity: 1 }}
       className="min-h-screen bg-background p-8 overflow-auto"
     >
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -1429,7 +1385,7 @@ function AdminScreen({ onBack }: { onBack: () => void }) {
             </h2>
           </div>
           <div className="flex items-center gap-2">
-            {authState === "catalog" && (
+            {authState === "main" && (
               <button
                 onClick={logout}
                 className="font-code text-xs tracking-widest text-muted-foreground px-3 py-2 transition-all"
@@ -1454,7 +1410,7 @@ function AdminScreen({ onBack }: { onBack: () => void }) {
 
         {/* Login */}
         {authState === "login" && (
-          <div className="mb-8" style={{ border: "1px solid rgba(254,230,0,0.2)" }}>
+          <div style={{ border: "1px solid rgba(254,230,0,0.2)" }}>
             <div className="px-4 py-3" style={{ background: "#1C1E1C", borderBottom: "1px solid rgba(254,230,0,0.15)" }}>
               <span className="font-code text-xs tracking-widest" style={{ color: "#FEE600" }}>ZUGANG // PASSWORT ERFORDERLICH</span>
             </div>
@@ -1482,127 +1438,32 @@ function AdminScreen({ onBack }: { onBack: () => void }) {
           </div>
         )}
 
-        {authState === "catalog" && (
+        {authState === "main" && (
           <>
-            {/* Leaderboard */}
-            <div className="mb-8" style={{ border: "1px solid rgba(254,230,0,0.15)" }}>
-              <div className="px-4 py-3 flex items-center gap-2" style={{ background: "#1C1E1C", borderBottom: "1px solid rgba(254,230,0,0.15)" }}>
-                <Trophy size={14} style={{ color: "#FEE600" }} />
-                <span className="font-code text-xs tracking-widest" style={{ color: "#FEE600" }}>BESTENLISTE — ALLE SPIELER</span>
-              </div>
-              <table className="w-full">
-                <thead>
-                  <tr style={{ borderBottom: "1px solid rgba(254,230,0,0.1)" }}>
-                    {["RANG", "AVATAR", "OPERATOR", "KLASSE", "PUNKTE"].map(h => (
-                      <th key={h} className="px-4 py-2 text-left font-code text-xs text-muted-foreground">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {board.map((e, i) => (
-                    <tr key={i} style={{ borderBottom: i < board.length - 1 ? "1px solid rgba(254,230,0,0.06)" : undefined }}>
-                      <td className="px-4 py-3">
-                        <span className="font-display font-black text-xl" style={{ color: rankColors[i] ?? "#A8ABA7" }}>#{i + 1}</span>
-                      </td>
-                      <td className="px-4 py-3"><FoxIcon type={e.avatar} size={32} /></td>
-                      <td className="px-4 py-3 font-code text-sm text-foreground">{e.name}</td>
-                      <td className="px-4 py-3">
-                        <span className="font-code text-xs px-2 py-0.5 uppercase tracking-widest" style={{ color: AVATAR_DEFS[e.avatar].color, border: `1px solid ${AVATAR_DEFS[e.avatar].color}50` }}>
-                          {AVATAR_DEFS[e.avatar].name}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 font-display font-bold text-xl text-foreground">{e.score}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* Tab navigation */}
+            <div className="flex gap-0 mb-6" style={{ borderBottom: "1px solid rgba(254,230,0,0.15)" }}>
+              {TABS.map(tab => {
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className="font-code text-xs tracking-widest px-6 py-3 transition-all"
+                    style={{
+                      color: active ? tab.color : "#A8ABA7",
+                      borderBottom: active ? `2px solid ${tab.color}` : "2px solid transparent",
+                      background: active ? `${tab.color}08` : "transparent",
+                      marginBottom: -1,
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Image catalog */}
-            <div style={{ border: "1px solid rgba(138,43,226,0.4)", background: "rgba(138,43,226,0.05)" }}>
-              <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(138,43,226,0.3)", background: "rgba(138,43,226,0.08)" }}>
-                <div className="flex items-center gap-2">
-                  <Info size={14} style={{ color: "#8A2BE2" }} />
-                  <span className="font-code text-xs tracking-widest" style={{ color: "#8A2BE2" }}>BILD-KATALOG — {images.length} EINTRÄGE</span>
-                </div>
-                <button
-                  onClick={loadImages}
-                  className="font-code text-xs tracking-widest text-muted-foreground px-2 py-1"
-                  style={{ border: "1px solid rgba(138,43,226,0.3)" }}
-                >
-                  AKTUALISIEREN
-                </button>
-              </div>
-
-              {deleteError && (
-                <div className="mx-4 mt-4 px-3 py-2 font-code text-xs" style={{ color: "#FF5050", border: "1px solid rgba(255,80,80,0.4)", background: "rgba(255,80,80,0.06)" }}>
-                  {deleteError}
-                </div>
-              )}
-
-              {imagesLoading ? (
-                <div className="p-8 text-center font-code text-xs text-muted-foreground">LADE …</div>
-              ) : images.length === 0 ? (
-                <div className="p-8 text-center font-code text-xs text-muted-foreground">KEINE BILDER VORHANDEN</div>
-              ) : (
-                <div className="p-4 grid grid-cols-3 gap-3">
-                  {images.map(img => {
-                    const s = statusStyle[img.status] ?? statusStyle.archived;
-                    const isConfirming = confirmDeleteId === img.id;
-                    const isDeleting = deletingId === img.id;
-                    return (
-                      <div key={img.id} className="overflow-hidden" style={{ border: "1px solid rgba(254,230,0,0.12)" }}>
-                        <img src={`/images/${img.id}`} alt={img.title} className="w-full h-24 object-cover bg-black/20" />
-                        <div className="p-2">
-                          <p className="font-code text-xs text-foreground truncate font-bold">{img.title}</p>
-                          <p className="font-code text-xs text-muted-foreground truncate opacity-60 mt-0.5">{img.id.slice(0, 8)}…</p>
-                          <div className="flex items-center justify-between mt-1.5">
-                            <span className="font-code text-xs px-1.5 py-0.5" style={{ color: s.color, background: s.bg, border: `1px solid ${s.border}` }}>
-                              {s.label}
-                            </span>
-                            <span className="font-code text-xs text-muted-foreground">
-                              {img.anomalyAreas.length} Z · {img.time_limit_seconds}s
-                            </span>
-                          </div>
-                          <div className="mt-2">
-                            {!isConfirming ? (
-                              <button
-                                onClick={() => { setConfirmDeleteId(img.id); setDeleteError(null); }}
-                                className="w-full flex items-center justify-center gap-1 font-code text-xs py-1 transition-all"
-                                style={{ border: "1px solid rgba(255,80,80,0.25)", color: "#A8ABA7" }}
-                                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#FF5050"; (e.currentTarget as HTMLButtonElement).style.color = "#FF5050"; }}
-                                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,80,80,0.25)"; (e.currentTarget as HTMLButtonElement).style.color = "#A8ABA7"; }}
-                              >
-                                <Trash2 size={10} /> LÖSCHEN
-                              </button>
-                            ) : (
-                              <div className="flex gap-1">
-                                <button
-                                  onClick={() => deleteImage(img.id)}
-                                  disabled={isDeleting}
-                                  className="flex-1 font-code text-xs py-1 disabled:opacity-50"
-                                  style={{ background: "rgba(255,80,80,0.15)", border: "1px solid #FF5050", color: "#FF5050" }}
-                                >
-                                  {isDeleting ? "…" : "SICHER?"}
-                                </button>
-                                <button
-                                  onClick={() => setConfirmDeleteId(null)}
-                                  disabled={isDeleting}
-                                  className="flex-1 font-code text-xs py-1"
-                                  style={{ border: "1px solid rgba(254,230,0,0.25)", color: "#A8ABA7" }}
-                                >
-                                  NEIN
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            {activeTab === "scores" && <ScoreScreen />}
+            {activeTab === "images" && <ImagesScreen />}
           </>
         )}
       </div>
@@ -1763,7 +1624,9 @@ function DevConsole({
 // ─────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>("start");
+  const [screen, setScreen] = useState<Screen>(
+    window.location.pathname === "/admin" ? "admin" : "start"
+  );
   const [player, setPlayer] = useState<{ name: string; avatar: AvatarType } | null>(null);
   const [gameId, setGameId] = useState<string | null>(null);
   const [currentRound, setCurrentRound] = useState(0);
@@ -1772,6 +1635,22 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastResolution, setLastResolution] = useState<any>(null);
+
+  useEffect(() => {
+    function onPopState() {
+      setScreen(window.location.pathname === "/admin" ? "admin" : "start");
+    }
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  function navigateTo(target: Screen) {
+    const path = target === "admin" ? "/admin" : "/";
+    if (window.location.pathname !== path) {
+      window.history.pushState(null, "", path);
+    }
+    setScreen(target);
+  }
 
   async function handleStartGame(name: string, avatar: AvatarType) {
     setLoading(true);
@@ -1805,7 +1684,7 @@ export default function App() {
   }
 
   function handleReplay() {
-    setScreen("start");
+    navigateTo("start");
     setPlayer(null);
     setGameId(null);
     setCurrentRound(0);
@@ -1844,7 +1723,7 @@ export default function App() {
     <div className="size-full">
       <AnimatePresence mode="wait">
         {screen === "start" && (
-          <StartScreen key="start" onStart={() => setScreen("avatar")} onAdmin={() => setScreen("admin")} />
+          <StartScreen key="start" onStart={() => setScreen("avatar")} />
         )}
         {screen === "avatar" && (
           <AvatarScreen key="avatar" onStart={handleStartGame} error={error} onErrorClear={() => setError(null)} />
@@ -1866,7 +1745,7 @@ export default function App() {
         {screen === "final" && player && gameId && (
           <FinalScreen key="final" player={player} gameId={gameId} roundResults={roundResults} onReplay={handleReplay} />
         )}
-        {screen === "admin" && <AdminScreen key="admin" onBack={() => setScreen("start")} />}
+        {screen === "admin" && <AdminScreen key="admin" onBack={() => navigateTo("start")} />}
       </AnimatePresence>
 
       <DevConsole currentScreen={screen} onJump={handleDevJump} />
