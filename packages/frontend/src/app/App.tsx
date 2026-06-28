@@ -511,6 +511,7 @@ function GameScreen({
   onRoundEnd: (result: RoundResult) => void;
 }) {
   const [markers, setMarkers] = useState<Marker[]>([]);
+  const [taskData, setTaskData] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState(image.timeLimit);
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   const [draggingId, setDraggingId] = useState<number | null>(null);
@@ -523,12 +524,17 @@ function GameScreen({
     (async () => {
       try {
         const task = await api.getTask(gameId, taskIndex);
-        // Update image with real task data if needed
+        setTaskData(task);
+        setTimeLeft(task.timeLimitSeconds);
+        console.log("📸 Loaded task:", task.imageUrl);
       } catch (err) {
         console.error("Failed to load task:", err);
       }
     })();
   }, [gameId, taskIndex]);
+
+  // Use real image URL from API if available, otherwise use mock
+  const displayImageUrl = taskData?.imageUrl ? `http://localhost:3001${taskData.imageUrl}` : image.src;
 
   // Find which zone a point falls in, ignoring zones already claimed by other markers
   function findZone(x: number, y: number, excludeMarkerId?: number): string | null {
@@ -745,7 +751,7 @@ function GameScreen({
 
             {/* Image */}
             <img
-              src={image.src}
+              src={displayImageUrl}
               alt={image.title}
               draggable={false}
               className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
