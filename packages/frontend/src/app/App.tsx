@@ -892,12 +892,32 @@ function RoundResultScreen({
   result,
   round,
   onNext,
+  gameId,
+  taskIndex,
 }: {
   image: GameImage;
   result: RoundResult;
   round: number;
   onNext: () => void;
+  gameId: string;
+  taskIndex: number;
 }) {
+  const [taskData, setTaskData] = useState<any>(null);
+
+  // Load task data and use real image URL
+  useEffect(() => {
+    (async () => {
+      try {
+        const task = await api.getTask(gameId, taskIndex);
+        setTaskData(task);
+      } catch (err) {
+        console.error("Failed to load task:", err);
+      }
+    })();
+  }, [gameId, taskIndex]);
+
+  const displayImageUrl = taskData?.imageUrl ? `http://localhost:3001${taskData.imageUrl}` : image.src;
+  const resolution = result.resolution?.areas || [];
 
   return (
     <motion.div
@@ -939,21 +959,20 @@ function RoundResultScreen({
           <div className="w-full">
             <div style={{ paddingBottom: "66.67%", position: "relative" }}>
               <img
-                src={image.src}
+                src={displayImageUrl}
                 alt={image.title}
                 className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                 style={{ border: "1px solid rgba(254,230,0,0.15)" }}
               />
 
-              {/* Polygon overlays — CSS clip-path with % values: always perspective-free */}
-              {image.zones.map(zone => {
-                const found = result.foundZoneIds.includes(zone.id);
-                const col = found ? "#00FF41" : "#FF6400";
-                const fill = found ? "rgba(0,255,65,0.18)" : "rgba(255,100,0,0.18)";
-                const border = found ? `rgba(0,255,65,0.9)` : `rgba(255,100,0,0.9)`;
-                const clipPath = `polygon(${zone.pts.map(([x, y]) => `${x}% ${y}%`).join(", ")})`;
+              {/* Polygon overlays from real API resolution */}
+              {resolution.map(area => {
+                const col = area.found ? "#00FF41" : "#FF6400";
+                const fill = area.found ? "rgba(0,255,65,0.18)" : "rgba(255,100,0,0.18)";
+                const border = area.found ? `rgba(0,255,65,0.9)` : `rgba(255,100,0,0.9)`;
+                const clipPath = `polygon(${area.polygon.map(([x, y]: [number, number]) => `${x * 100}% ${y * 100}%`).join(", ")})`;
                 return (
-                  <div key={zone.id} className="absolute inset-0 pointer-events-none" style={{ clipPath, background: fill, filter: `drop-shadow(0 0 1.5px ${border}) drop-shadow(0 0 0.5px ${border})` }} />
+                  <div key={area.id} className="absolute inset-0 pointer-events-none" style={{ clipPath, background: fill, filter: `drop-shadow(0 0 1.5px ${border}) drop-shadow(0 0 0.5px ${border})` }} />
                 );
               })}
 
@@ -990,14 +1009,14 @@ function RoundResultScreen({
                 </div>
               ))}
 
-              {/* Zone numbered circles — CSS positioned, always circular */}
-              {image.zones.map((zone, i) => {
-                const found = result.foundZoneIds.includes(zone.id);
-                const [cx, cy] = polyCenter(zone.pts);
-                const col = found ? "#00FF41" : "#FF6400";
+              {/* Zone numbered circles from real API resolution */}
+              {resolution.map((area, i) => {
+                const cx = area.polygon.reduce((s: number, [x]: [number, number]) => s + x, 0) / area.polygon.length * 100;
+                const cy = area.polygon.reduce((s: number, [, y]: [number, number]) => s + y, 0) / area.polygon.length * 100;
+                const col = area.found ? "#00FF41" : "#FF6400";
                 return (
                   <div
-                    key={zone.id}
+                    key={area.id}
                     style={{
                       position: "absolute",
                       left: `${cx}%`,
@@ -1038,18 +1057,17 @@ function RoundResultScreen({
           </p>
 
           <div className="space-y-3">
-            {image.zones.map((zone, i) => {
-              const found = result.foundZoneIds.includes(zone.id);
-              const col = found ? "#00FF41" : "#FF6400";
+            {resolution.map((area, i) => {
+              const col = area.found ? "#00FF41" : "#FF6400";
               return (
                 <motion.div
-                  key={zone.id}
+                  key={area.id}
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.12 }}
                   className="p-3"
                   style={{
-                    background: found ? "rgba(0,255,65,0.05)" : "rgba(255,100,0,0.05)",
+                    background: area.found ? "rgba(0,255,65,0.05)" : "rgba(255,100,0,0.05)",
                     border: `1px solid ${col}40`,
                   }}
                 >
@@ -1065,10 +1083,10 @@ function RoundResultScreen({
                       {i + 1}
                     </div>
                     <span className="font-code text-sm font-bold" style={{ color: col }}>
-                      {zone.label}
+                      Anomalie {i + 1}
                     </span>
                   </div>
-                  <p className="font-code text-sm leading-relaxed text-muted-foreground pl-9">{zone.explanation}</p>
+                  <p className="font-code text-sm leading-relaxed text-muted-foreground pl-9">{area.explanation}</p>
                 </motion.div>
               );
             })}
@@ -1680,13 +1698,15 @@ export default function App() {
         {screen === "game" && gameId && (
           <GameScreen key={`game-${currentRound}`} image={currentImage} gameId={gameId} taskIndex={currentRound} round={currentRound + 1} onRoundEnd={handleRoundEnd} />
         )}
-        {screen === "round-result" && roundResults.length > 0 && (
+        {screen === "round-result" && roundResults.length > 0 && gameId && (
           <RoundResultScreen
             key={`result-${currentRound}`}
             image={GAME_IMAGES[currentRound % GAME_IMAGES.length]}
             result={roundResults[roundResults.length - 1]}
             round={currentRound + 1}
             onNext={handleNext}
+            gameId={gameId}
+            taskIndex={currentRound}
           />
         )}
         {screen === "final" && player && gameId && (
