@@ -64,7 +64,7 @@ const frontendDist = path.resolve(__dirname, "../../frontend/dist");
 // Hashed assets (JS/CSS) dürfen gecacht werden; index.html nie (damit Deployments sofort greifen)
 app.use(express.static(frontendDist, { index: false }));
 app.get("*", (_req, res) => {
-  res.set("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.set("Cache-Control", "no-cache");
   res.sendFile(path.join(frontendDist, "index.html"));
 });
 
