@@ -1164,14 +1164,18 @@ function FinalScreen({
   onReplay: () => void;
 }) {
   const [summary, setSummary] = useState<any>(null);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load summary from API
   useEffect(() => {
     (async () => {
       try {
-        const data = await api.getSummary(gameId);
-        setSummary(data);
+        const [summaryData, boardData] = await Promise.all([
+          api.getSummary(gameId),
+          api.getLeaderboard(),
+        ]);
+        setSummary(summaryData);
+        setLeaderboard(boardData);
       } catch (err) {
         console.error("Failed to load summary:", err);
       } finally {
@@ -1183,11 +1187,7 @@ function FinalScreen({
   const totalScore = summary?.totalScore ?? roundResults.reduce((s, r) => s + r.score, 0);
   const totalFound = summary?.totalHits ?? roundResults.reduce((s, r) => s + r.found, 0);
   const totalZones = roundResults.reduce((s, r) => s + r.total, 0);
-
-  const board = [...MOCK_BOARD, { name: player.name, avatar: player.avatar, score: totalScore }].sort(
-    (a, b) => b.score - a.score
-  );
-  const rank = board.findIndex(e => e.name === player.name && e.score === totalScore) + 1;
+  const rank = summary?.rank ?? leaderboard.findIndex((e: any) => e.playerName === player.name) + 1;
 
   return (
     <motion.div
@@ -1237,7 +1237,7 @@ function FinalScreen({
             className="font-display font-bold text-2xl text-foreground mt-2"
           >
             RANG #{rank}{" "}
-            <span className="font-code text-sm text-muted-foreground">von {board.length} Spieler:innen</span>
+            <span className="font-code text-sm text-muted-foreground">von {leaderboard.length} Spieler:innen</span>
           </motion.p>
         </div>
 
@@ -1278,15 +1278,15 @@ function FinalScreen({
               LEADERBOARD
             </span>
           </div>
-          {board.slice(0, 6).map((entry, i) => {
-            const isMe = entry.name === player.name && entry.score === totalScore;
+          {leaderboard.slice(0, 6).map((entry: any, i: number) => {
+            const isMe = entry.rank === rank;
             const rankColors = ["#FEE600", "#C0C0C0", "#CD7F32"];
             return (
               <div
-                key={i}
+                key={entry.rank}
                 className="flex items-center gap-3 px-4 py-2.5"
                 style={{
-                  borderBottom: i < 5 ? "1px solid rgba(254,230,0,0.06)" : undefined,
+                  borderBottom: i < Math.min(5, leaderboard.length - 1) ? "1px solid rgba(254,230,0,0.06)" : undefined,
                   background: isMe ? "rgba(254,230,0,0.08)" : undefined,
                 }}
               >
@@ -1294,17 +1294,17 @@ function FinalScreen({
                   className="font-display font-black text-xl w-7 text-center"
                   style={{ color: rankColors[i] ?? "#A8ABA7" }}
                 >
-                  {i + 1}
+                  {entry.rank}
                 </span>
-                <FoxIcon type={entry.avatar} size={30} />
+                <FoxIcon type={entry.avatarLevel as AvatarType} size={30} />
                 <span
                   className="font-code text-sm flex-1 truncate"
                   style={{ color: isMe ? "#FEE600" : "#E0E0D8" }}
                 >
-                  {entry.name}
+                  {entry.playerName}
                   {isMe && <span className="ml-2 text-xs opacity-60">← DU</span>}
                 </span>
-                <span className="font-display font-bold text-xl text-foreground">{entry.score}</span>
+                <span className="font-display font-bold text-xl text-foreground">{entry.totalScore}</span>
               </div>
             );
           })}
