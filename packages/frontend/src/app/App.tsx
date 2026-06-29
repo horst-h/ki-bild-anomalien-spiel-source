@@ -553,8 +553,7 @@ function GameScreen({
     })();
   }, [gameId, taskIndex]);
 
-  // Use real image URL from API if available, otherwise use mock
-  const displayImageUrl = taskData?.imageUrl ? `http://localhost:3001${taskData.imageUrl}` : image.src;
+  const displayImageUrl = taskData?.imageUrl ?? image.src;
 
   // Find which zone a point falls in, ignoring zones already claimed by other markers
   function findZone(x: number, y: number, excludeMarkerId?: number): string | null {
@@ -942,7 +941,7 @@ function RoundResultScreen({
     })();
   }, [gameId, taskIndex]);
 
-  const displayImageUrl = taskData?.imageUrl ? `http://localhost:3001${taskData.imageUrl}` : image.src;
+  const displayImageUrl = taskData?.imageUrl ?? image.src;
   const foundZoneIds = result.foundZoneIds || [];
 
   return (
