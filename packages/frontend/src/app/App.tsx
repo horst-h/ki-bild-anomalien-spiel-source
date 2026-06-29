@@ -42,7 +42,8 @@ interface RoundResult {
   timeLimit: number;
   foundZoneIds: string[];
   markerPositions: Array<{ id: number; x: number; y: number }>;
-  resolution?: any; // Real resolution from API
+  resolution?: any;
+  imageUrl?: string;
 }
 
 
@@ -595,6 +596,7 @@ function GameScreen({
           foundZoneIds,
           markerPositions: ms.map(m => ({ id: m.id, x: m.x, y: m.y })),
           resolution: finishResponse.resolution,
+          imageUrl: taskData?.imageUrl,
         });
       } catch (err) {
         console.error("Failed to finish task:", err);
@@ -693,6 +695,14 @@ function GameScreen({
   const timerColor = ratio > 0.5 ? "#00FF41" : ratio > 0.25 ? "#FEE600" : "#FF4444";
   const timerPulse = ratio <= 0.25;
   const canPlaceMore = markers.length < totalAreas && !doneRef.current;
+
+  if (!taskData) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <span className="font-code text-sm tracking-widest text-muted-foreground animate-pulse">LADE BILD …</span>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -917,31 +927,13 @@ function RoundResultScreen({
   result,
   round,
   onNext,
-  gameId,
-  taskIndex,
 }: {
   image: GameImage;
   result: RoundResult;
   round: number;
   onNext: () => void;
-  gameId: string;
-  taskIndex: number;
 }) {
-  const [taskData, setTaskData] = useState<any>(null);
-
-  // Load task data and use real image URL
-  useEffect(() => {
-    (async () => {
-      try {
-        const task = await api.getTask(gameId, taskIndex);
-        setTaskData(task);
-      } catch (err) {
-        console.error("Failed to load task:", err);
-      }
-    })();
-  }, [gameId, taskIndex]);
-
-  const displayImageUrl = taskData?.imageUrl ?? image.src;
+  const displayImageUrl = result.imageUrl ?? image.src;
   const foundZoneIds = result.foundZoneIds || [];
 
   return (
@@ -1737,8 +1729,6 @@ export default function App() {
             result={roundResults[roundResults.length - 1]}
             round={currentRound + 1}
             onNext={handleNext}
-            gameId={gameId}
-            taskIndex={currentRound}
           />
         )}
         {screen === "final" && player && gameId && (
