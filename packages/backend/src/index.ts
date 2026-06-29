@@ -61,8 +61,10 @@ app.use("/api/admin/leaderboard", adminLeaderboardRouter);
 
 // --- Statische Auslieferung des Frontend-Builds (Produktion) ---
 const frontendDist = path.resolve(__dirname, "../../frontend/dist");
-app.use(express.static(frontendDist));
+// Hashed assets (JS/CSS) dürfen gecacht werden; index.html nie (damit Deployments sofort greifen)
+app.use(express.static(frontendDist, { index: false }));
 app.get("*", (_req, res) => {
+  res.set("Cache-Control", "no-cache, no-store, must-revalidate");
   res.sendFile(path.join(frontendDist, "index.html"));
 });
 
