@@ -42,7 +42,7 @@ export function TruncatedLeaderboard({ scores, currentPlayerRank, topN = TOP_N }
             >
               <span
                 className="font-code text-base tracking-[0.4em]"
-                style={{ color: "rgba(254,230,0,0.25)" }}
+                style={{ color: "#FEE600" }}
               >
                 • • •
               </span>
