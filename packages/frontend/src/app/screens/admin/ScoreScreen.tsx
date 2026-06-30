@@ -114,14 +114,14 @@ export function ScoreScreen() {
         </div>
       )}
 
-      <div style={{ border: "1px solid rgba(254,230,0,0.15)" }}>
+      <div style={{ border: "1px solid rgba(254,230,0,0.15)", maxHeight: "65vh", overflowY: "auto" }}>
         {loading ? (
           <div className="p-8 text-center font-code text-xs text-muted-foreground">LADE …</div>
         ) : entries.length === 0 ? (
           <div className="p-8 text-center font-code text-xs text-muted-foreground">KEINE EINTRÄGE VORHANDEN</div>
         ) : (
           <table className="w-full">
-            <thead>
+            <thead style={{ position: "sticky", top: 0, background: "#121414", zIndex: 1 }}>
               <tr style={{ borderBottom: "1px solid rgba(254,230,0,0.1)" }}>
                 {["RANG", "OPERATOR", "KLASSE", "PUNKTE", "DATUM", ""].map(h => (
                   <th key={h} className="px-4 py-2 text-left font-code text-xs text-muted-foreground">{h}</th>

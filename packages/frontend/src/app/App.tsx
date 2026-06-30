@@ -5,18 +5,18 @@ import foxHero from "@/imports/image-2.png";
 import avatarJungfuchs from "@/assets/icon_fuchs_laugh_shadow.png";
 import avatarWaldfuchs from "@/assets/icon_fuchs_regular_shadow.png";
 import avatarErzfuchs from "@/assets/icon_fuchs_idea_shadow.png";
-import { Clock, Target, X, Check, Trophy, RotateCcw, ChevronRight, Crosshair, AlertTriangle, Info, Trash2 } from "lucide-react";
+import { Clock, Target, X, Check, RotateCcw, ChevronRight, Crosshair, AlertTriangle, Info, Trash2 } from "lucide-react";
 import { ScoreScreen } from "./screens/admin/ScoreScreen";
 import { ImagesScreen } from "./screens/admin/ImagesScreen";
 import { api } from "../api";
+import { FoxIcon, AVATAR_DEFS, type AvatarType } from "./components/FoxIcon";
+import { TruncatedLeaderboard } from "./screens/leaderboard/TruncatedLeaderboard";
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
 // ─────────────────────────────────────────────────────────────
 
 type Screen = "start" | "avatar" | "rules" | "game" | "round-result" | "final" | "admin";
-type AvatarType = "jungfuchs" | "waldfuchs" | "erzfuchs";
-
 interface AnomalyZone {
   id: string;
   label: string;
@@ -150,12 +150,6 @@ const GAME_IMAGES: GameImage[] = [
   },
 ];
 
-const AVATAR_DEFS = {
-  jungfuchs: { name: "Jungfuchs", desc: "Einstieg · Kinderfreundliche Szenen", color: "#00FF41" },
-  waldfuchs: { name: "Waldfuchs", desc: "Standard · Allgemeine Bilder", color: "#FEE600" },
-  erzfuchs: { name: "Erzfuchs", desc: "Experte · Anspruchsvolle KI-Bilder", color: "#8A2BE2" },
-};
-
 const MOCK_BOARD = [
   { name: "KI_Jäger_X", avatar: "erzfuchs" as AvatarType, score: 2847 },
   { name: "Anomalie99", avatar: "jungfuchs" as AvatarType, score: 2634 },
@@ -198,41 +192,6 @@ function polyCenter(pts: Array<[number, number]>): [number, number] {
     pts.reduce((s, [x]) => s + x, 0) / pts.length,
     pts.reduce((s, [, y]) => s + y, 0) / pts.length,
   ];
-}
-
-// ─────────────────────────────────────────────────────────────
-// FOX SVG AVATAR
-// ─────────────────────────────────────────────────────────────
-
-function FoxIcon({ type, size = 64 }: { type: AvatarType; size?: number }) {
-  const c = AVATAR_DEFS[type].color;
-  const dark = "#121414";
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
-      <circle cx="32" cy="32" r="30" fill="#1A1C1A" stroke={c} strokeWidth="1.5" />
-      {/* body */}
-      <ellipse cx="32" cy="42" rx="14" ry="10" fill={c} opacity="0.85" />
-      {/* head */}
-      <ellipse cx="32" cy="27" rx="13" ry="11" fill={c} />
-      {/* ears */}
-      <polygon points="20,19 14,3 27,15" fill={c} />
-      <polygon points="44,19 50,3 37,15" fill={c} />
-      <polygon points="21,18 16,7 27,15" fill={dark} opacity="0.35" />
-      <polygon points="43,18 48,7 37,15" fill={dark} opacity="0.35" />
-      {/* snout */}
-      <ellipse cx="32" cy="30" rx="6" ry="4" fill={c} opacity="0.6" />
-      {/* eyes */}
-      <ellipse cx="26" cy="25" rx="2.8" ry="2.8" fill={dark} />
-      <ellipse cx="38" cy="25" rx="2.8" ry="2.8" fill={dark} />
-      <circle cx="27" cy="24.2" r="0.9" fill="white" />
-      <circle cx="39" cy="24.2" r="0.9" fill="white" />
-      {/* nose */}
-      <ellipse cx="32" cy="30" rx="2" ry="1.6" fill={dark} />
-      {/* level badge */}
-      {type === "erzfuchs" && <circle cx="52" cy="12" r="5" fill="#8A2BE2" stroke="#FEE600" strokeWidth="1.5" />}
-      {type === "jungfuchs" && <circle cx="52" cy="12" r="5" fill="#00FF41" stroke={dark} strokeWidth="1.5" />}
-    </svg>
-  );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1334,46 +1293,8 @@ function FinalScreen({
         </div>
 
         {/* Leaderboard */}
-        <div className="mb-6" style={{ border: "1px solid rgba(254,230,0,0.12)" }}>
-          <div
-            className="px-4 py-3 flex items-center gap-2"
-            style={{ borderBottom: "1px solid rgba(254,230,0,0.12)", background: "#1C1E1C" }}
-          >
-            <Trophy size={14} style={{ color: "#FEE600" }} />
-            <span className="font-code text-xs tracking-widest" style={{ color: "#FEE600" }}>
-              LEADERBOARD
-            </span>
-          </div>
-          {leaderboard.slice(0, 6).map((entry: any, i: number) => {
-            const isMe = entry.rank === rank;
-            const rankColors = ["#FEE600", "#C0C0C0", "#CD7F32"];
-            return (
-              <div
-                key={entry.rank}
-                className="flex items-center gap-3 px-4 py-2.5"
-                style={{
-                  borderBottom: i < Math.min(5, leaderboard.length - 1) ? "1px solid rgba(254,230,0,0.06)" : undefined,
-                  background: isMe ? "rgba(254,230,0,0.08)" : undefined,
-                }}
-              >
-                <span
-                  className="font-display font-black text-xl w-7 text-center"
-                  style={{ color: rankColors[i] ?? "#A8ABA7" }}
-                >
-                  {entry.rank}
-                </span>
-                <FoxIcon type={entry.avatarLevel as AvatarType} size={30} />
-                <span
-                  className="font-code text-sm flex-1 truncate"
-                  style={{ color: isMe ? "#FEE600" : "#E0E0D8" }}
-                >
-                  {entry.playerName}
-                  {isMe && <span className="ml-2 text-xs opacity-60">← DU</span>}
-                </span>
-                <span className="font-display font-bold text-xl text-foreground">{entry.totalScore}</span>
-              </div>
-            );
-          })}
+        <div className="mb-6">
+          <TruncatedLeaderboard scores={leaderboard} currentPlayerRank={rank} />
         </div>
 
         <motion.button
