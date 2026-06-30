@@ -5,6 +5,7 @@ async function startGame(page: any, playerName = "E2E-Fuchs") {
   await page.getByRole("button", { name: "Spiel starten" }).click();
   await page.fill("#playerName", playerName);
   await page.getByRole("button", { name: "Los geht's!" }).click();
+  await page.getByRole("button", { name: "Los geht's →" }).click();
   await expect(page.getByRole("button", { name: "FERTIG →" })).toBeVisible({ timeout: 15_000 });
 }
 
