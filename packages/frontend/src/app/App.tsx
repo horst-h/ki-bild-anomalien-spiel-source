@@ -476,6 +476,7 @@ interface Marker {
   x: number;         // 0–100 % of image width
   y: number;         // 0–100 % of image height
   zoneId: string | null;
+  hit: boolean;      // whether the initial click registered a backend hit
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -683,7 +684,7 @@ function GameScreen({
 
       // Add marker locally (always, even if miss - for UI feedback)
       const zoneId = result.result === "hit" ? result.areaId : null;
-      const updated = [...markersRef.current, { id, x, y, zoneId }];
+      const updated = [...markersRef.current, { id, x, y, zoneId, hit: result.result === "hit" }];
       markersRef.current = updated;
       setMarkers(updated);
 
@@ -718,7 +719,24 @@ function GameScreen({
     setCursor({ x, y });
   }
 
-  function handleMarkerPointerUp() {
+  async function handleMarkerPointerUp() {
+    if (draggingId !== null) {
+      const marker = markersRef.current.find(m => m.id === draggingId);
+      if (marker && !marker.hit) {
+        try {
+          const result = await api.attempt(gameId, taskIndex, marker.x / 100, marker.y / 100);
+          if (result.result === "hit") {
+            const updated = markersRef.current.map(m =>
+              m.id === draggingId ? { ...m, zoneId: result.areaId, hit: true } : m
+            );
+            markersRef.current = updated;
+            setMarkers(updated);
+          }
+        } catch (err) {
+          console.error("Drag re-attempt failed:", err);
+        }
+      }
+    }
     setDraggingId(null);
   }
 
