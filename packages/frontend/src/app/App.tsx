@@ -1,9 +1,10 @@
-import image_csm_schwaebisch_hall_fuchs_webseite_transparent_ab262067f2 from '@/imports/csm_schwaebisch-hall_fuchs_webseite-transparent_ab262067f2.png'
+import fuchsYoga from '@/assets/fuchs_yoga_rgb_schatten.png'
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import foxHero from "@/imports/image-2.png";
-import foxAvatar from "@/imports/image_1.png";
-import foxAvatarErzfuchs from "@/imports/image_2.png";
+import avatarJungfuchs from "@/assets/icon_fuchs_laugh_shadow.png";
+import avatarWaldfuchs from "@/assets/icon_fuchs_regular_shadow.png";
+import avatarErzfuchs from "@/assets/icon_fuchs_idea_shadow.png";
 import { Clock, Target, X, Check, Trophy, RotateCcw, ChevronRight, Crosshair, AlertTriangle, Info, Trash2 } from "lucide-react";
 import { ScoreScreen } from "./screens/admin/ScoreScreen";
 import { ImagesScreen } from "./screens/admin/ImagesScreen";
@@ -13,7 +14,7 @@ import { api } from "../api";
 // TYPES
 // ─────────────────────────────────────────────────────────────
 
-type Screen = "start" | "avatar" | "game" | "round-result" | "final" | "admin";
+type Screen = "start" | "avatar" | "rules" | "game" | "round-result" | "final" | "admin";
 type AvatarType = "jungfuchs" | "waldfuchs" | "erzfuchs";
 
 interface AnomalyZone {
@@ -324,14 +325,14 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           className="flex justify-center mb-6"
         >
           <div className="w-48 h-48 rounded-full bg-white flex items-center justify-center overflow-hidden shadow-2xl">
-            <img src={image_csm_schwaebisch_hall_fuchs_webseite_transparent_ab262067f2} alt="Fuchs Maskottchen" className="w-44 h-44 object-contain" />
+            <img src={fuchsYoga} alt="Fuchs Maskottchen" className="w-44 h-44 object-contain" />
           </div>
         </motion.div>
 
         <p className="font-code text-muted-foreground mb-8 leading-relaxed max-w-sm mx-auto text-[15px]">
           Entdecke KI-Anomalien in synthetischen Bildern.
           <br />
-          Bist du scharf genug, die Fehler zu finden?
+          Findest Du alle Fehler?
         </p>
 
         <div className="flex flex-col gap-3 items-center">
@@ -445,11 +446,11 @@ function AvatarScreen({
                     width: 96, height: 96, borderRadius: "50%",
                     overflow: "hidden",
                     border: `3px solid ${active ? def.color : "rgba(255,255,255,0.12)"}`,
-                    background: "white",
+                    background: "transparent",
                     flexShrink: 0,
                     transition: "border-color 0.2s",
                   }}>
-                    <img src={key === "erzfuchs" ? foxAvatarErzfuchs : foxAvatar} alt={def.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 15%" }} />
+                    <img src={key === "erzfuchs" ? avatarErzfuchs : key === "jungfuchs" ? avatarJungfuchs : avatarWaldfuchs} alt={def.name} style={{ width: "100%", height: "100%", objectFit: "contain", padding: "8px" }} />
                   </div>
                   <div className="text-center">
                     <div
@@ -516,6 +517,80 @@ interface Marker {
   x: number;         // 0–100 % of image width
   y: number;         // 0–100 % of image height
   zoneId: string | null;
+}
+
+// ─────────────────────────────────────────────────────────────
+// RULES SCREEN
+// ─────────────────────────────────────────────────────────────
+
+const RULES = [
+  { icon: "🔍", title: "Anomalien finden", text: "Jedes Bild enthält mehrere KI-generierte Fehler. Klicke direkt auf die Stelle im Bild, die dir verdächtig vorkommt." },
+  { icon: "⏱", title: "Zeit läuft", text: "Pro Bild hast du nur begrenzte Zeit. Je schneller du die Fehler entdeckst, desto mehr Punkte bekommst du." },
+  { icon: "🎯", title: "Genauigkeit zählt", text: "Fehlklicks kosten Punkte. Klicke also nur, wenn du dir sicher bist – Qualität schlägt Quantität." },
+  { icon: "🏁", title: "Drei Runden", text: "Das Spiel besteht aus drei Bildern. Nach jeder Runde siehst du dein Ergebnis. Am Ende gibt es eine Gesamtwertung." },
+];
+
+function RulesScreen({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-lg flex flex-col gap-8"
+      >
+        {/* Header */}
+        <div className="text-center">
+          <p className="font-code text-xs tracking-[0.4em] text-muted-foreground mb-3" style={{ color: "#FEE600", opacity: 0.7 }}>
+            SPIELREGELN
+          </p>
+          <h1 className="font-display font-black uppercase text-3xl tracking-widest" style={{ color: "#F5F5EB" }}>
+            So geht's
+          </h1>
+        </div>
+
+        {/* Rules list */}
+        <div className="flex flex-col gap-3">
+          {RULES.map((rule, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 + i * 0.08 }}
+              className="flex gap-4 p-4"
+              style={{ background: "#1C1E1C", border: "1px solid rgba(255,255,255,0.07)" }}
+            >
+              <span style={{ fontSize: 24, lineHeight: 1, flexShrink: 0 }}>{rule.icon}</span>
+              <div>
+                <p className="font-display font-bold uppercase text-sm tracking-wider mb-1" style={{ color: "#FEE600" }}>
+                  {rule.title}
+                </p>
+                <p className="font-code text-sm leading-relaxed" style={{ color: "#A8ABA7" }}>
+                  {rule.text}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Start button */}
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={onStart}
+          className="w-full py-4 font-display font-black uppercase tracking-[0.3em] text-base"
+          style={{
+            background: "#FEE600",
+            color: "#121414",
+            border: "none",
+            cursor: "pointer",
+            boxShadow: "0 0 32px rgba(254,230,0,0.25)",
+          }}
+        >
+          Los geht's →
+        </motion.button>
+      </motion.div>
+    </div>
+  );
 }
 
 function GameScreen({
@@ -1466,146 +1541,19 @@ function AdminScreen({ onBack }: { onBack: () => void }) {
 // DEV CONSOLE
 // ─────────────────────────────────────────────────────────────
 
-const MOCK_PLAYER = { name: "TESTFUCHS", avatar: "erzfuchs" as AvatarType };
-const MOCK_RESULTS: RoundResult[] = [
-  { score: 820, found: 3, total: 3, misses: 0, timeLeft: 42, timeLimit: 90, foundZoneIds: ["z1", "z2", "z3"], markerPositions: [{ id: 1, x: 18, y: 26 }, { id: 2, x: 65, y: 62 }, { id: 3, x: 79, y: 20 }] },
-  { score: 610, found: 2, total: 3, misses: 1, timeLeft: 18, timeLimit: 65, foundZoneIds: ["z4", "z5"],       markerPositions: [{ id: 1, x: 20, y: 40 }, { id: 2, x: 72, y: 71 }, { id: 3, x: 50, y: 10 }] },
-  { score: 390, found: 1, total: 3, misses: 2, timeLeft: 5,  timeLimit: 45, foundZoneIds: ["z7"],             markerPositions: [{ id: 1, x: 30, y: 40 }, { id: 2, x: 66, y: 50 }, { id: 3, x: 40, y: 77 }] },
-];
 
-function DevConsole({
-  currentScreen,
-  onJump,
-}: {
-  currentScreen: Screen;
-  onJump: (screen: Screen, round?: number) => void;
-}) {
-  const [open, setOpen] = useState(false);
+declare const __BUILD_TIME__: string;
 
-  const SCREENS: { id: Screen; label: string; sub?: string }[] = [
-    { id: "start",        label: "01 START",        sub: "Startseite" },
-    { id: "avatar",       label: "02 AVATAR",       sub: "Profil erstellen" },
-    { id: "game",         label: "03 SPIEL R1",     sub: "Runde 1 · Easy" },
-    { id: "round-result", label: "04 ERGEBNIS",     sub: "Rundenauswertung" },
-    { id: "final",        label: "05 AUSWERTUNG",   sub: "Gesamtergebnis" },
-    { id: "admin",        label: "06 ADMIN",        sub: "Kontrolle" },
-  ];
+function DevConsole() {
+  const d = new Date(__BUILD_TIME__);
+  const label = d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })
+    + " · " + d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
 
   return (
-    <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 9999 }}>
-      {/* Toggle button */}
-      <button className="font-[Share_Tech_Mono]"
-        onClick={() => setOpen(o => !o)}
-        style={{
-          background: open ? "#FEE600" : "#1C1E1C",
-          color: open ? "#121414" : "#FEE600",
-          border: "1px solid #FEE600",
-          fontFamily: "'Sora', sans-serif",
-          fontSize: 13,
-          letterSpacing: "0.2em",
-          padding: "6px 14px",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          boxShadow: "0 0 16px rgba(254,230,0,0.25)",
-          marginLeft: "auto",
-        }}
-      >
-        <span style={{ fontSize: 13 }}>{open ? "✕" : "⌥"}</span>
-        DEV CONSOLE
-      </button>
-
-      {/* Panel */}
-      {open && (
-        <motion.div
-          initial={{ opacity: 0, y: 8, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          style={{
-            background: "#0E1010",
-            border: "1px solid rgba(254,230,0,0.35)",
-            marginTop: 8,
-            width: 240,
-            boxShadow: "0 0 32px rgba(254,230,0,0.12)",
-          }}
-        >
-          {/* Header */}
-          <div style={{ padding: "8px 12px", borderBottom: "1px solid rgba(254,230,0,0.15)" }}>
-            <p style={{ fontFamily: "'Sora', sans-serif", fontSize: 12, color: "#FEE600", letterSpacing: "0.3em", opacity: 0.7 }}>
-              SCREEN NAVIGATOR
-            </p>
-            <p style={{ fontFamily: "'Sora', sans-serif", fontSize: 13, color: "#A8ABA7", letterSpacing: "0.15em", marginTop: 2 }}>
-              AKTIV → {currentScreen.toUpperCase()}
-            </p>
-          </div>
-
-          {/* Screen list */}
-          <div style={{ padding: "6px 0" }}>
-            {SCREENS.map(s => {
-              const active = currentScreen === s.id;
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => { onJump(s.id); }}
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "7px 12px",
-                    background: active ? "rgba(254,230,0,0.1)" : "transparent",
-                    border: "none",
-                    borderLeft: `2px solid ${active ? "#FEE600" : "transparent"}`,
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
-                >
-                  <span style={{ fontFamily: "'Sora', sans-serif", fontSize: 13, color: active ? "#FEE600" : "#A8ABA7", letterSpacing: "0.1em", flex: 1 }}>
-                    {s.label}
-                  </span>
-                  <span style={{ fontFamily: "'Sora', sans-serif", fontSize: 13, color: "#A8ABA7", opacity: 0.5 }}>
-                    {s.sub}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Round selector for game screen */}
-          <div style={{ padding: "8px 12px", borderTop: "1px solid rgba(254,230,0,0.1)" }}>
-            <p style={{ fontFamily: "'Sora', sans-serif", fontSize: 13, color: "#A8ABA7", letterSpacing: "0.2em", marginBottom: 6 }}>
-              SPIEL-RUNDE
-            </p>
-            <div style={{ display: "flex", gap: 6 }}>
-              {[1, 2, 3].map(r => (
-                <button
-                  key={r}
-                  onClick={() => onJump("game", r - 1)}
-                  style={{
-                    flex: 1,
-                    padding: "5px 0",
-                    background: currentScreen === "game" ? "rgba(254,230,0,0.08)" : "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(254,230,0,0.25)",
-                    color: "#FEE600",
-                    fontFamily: "'Sora', sans-serif",
-                    fontSize: 13,
-                    cursor: "pointer",
-                    letterSpacing: "0.1em",
-                  }}
-                >
-                  R{r}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ padding: "6px 12px 10px", borderTop: "1px solid rgba(254,230,0,0.1)" }}>
-            <p style={{ fontFamily: "'Sora', sans-serif", fontSize: 13, color: "#A8ABA7", opacity: 0.4, letterSpacing: "0.15em" }}>
-              PROTOTYPE DEV TOOL — NICHT FÜR PRODUKTION
-            </p>
-          </div>
-        </motion.div>
-      )}
+    <div style={{ position: "fixed", bottom: 12, right: 14, zIndex: 9999, pointerEvents: "none" }}>
+      <p style={{ fontFamily: "'Sora', sans-serif", fontSize: 11, color: "rgba(168,171,167,0.45)", letterSpacing: "0.12em" }}>
+        BUILD {label}
+      </p>
     </div>
   );
 }
@@ -1653,7 +1601,7 @@ export default function App() {
       setTaskCount(response.taskCount);
       setCurrentRound(0);
       setRoundResults([]);
-      setScreen("game");
+      setScreen("rules");
     } catch (err) {
       setError((err as Error).message);
       setLoading(false);
@@ -1683,31 +1631,6 @@ export default function App() {
     setError(null);
   }
 
-  // Dev console jump — injects mock data so every screen is previewable
-  function handleDevJump(target: Screen, round = 0) {
-    setCurrentRound(round);
-    if (target === "game") {
-      setPlayer(MOCK_PLAYER);
-      setGameId("mock-game-id");
-      setRoundResults([]);
-      setScreen("game");
-    } else if (target === "round-result") {
-      setPlayer(MOCK_PLAYER);
-      setRoundResults([MOCK_RESULTS[0]]);
-      setCurrentRound(0);
-      setScreen("round-result");
-    } else if (target === "final") {
-      setPlayer(MOCK_PLAYER);
-      setGameId("mock-game-id");
-      setRoundResults(MOCK_RESULTS);
-      setScreen("final");
-    } else if (target === "avatar") {
-      setScreen("avatar");
-    } else {
-      setScreen(target);
-    }
-  }
-
   const currentImage = gameId ? GAME_IMAGES[currentRound % GAME_IMAGES.length] : GAME_IMAGES[0];
 
   return (
@@ -1718,6 +1641,9 @@ export default function App() {
         )}
         {screen === "avatar" && (
           <AvatarScreen key="avatar" onStart={handleStartGame} error={error} onErrorClear={() => setError(null)} />
+        )}
+        {screen === "rules" && (
+          <RulesScreen key="rules" onStart={() => setScreen("game")} />
         )}
         {screen === "game" && gameId && (
           <GameScreen key={`game-${currentRound}`} image={currentImage} gameId={gameId} taskIndex={currentRound} round={currentRound + 1} onRoundEnd={handleRoundEnd} />
@@ -1737,7 +1663,7 @@ export default function App() {
         {screen === "admin" && <AdminScreen key="admin" onBack={() => navigateTo("start")} />}
       </AnimatePresence>
 
-      <DevConsole currentScreen={screen} onJump={handleDevJump} />
+      <DevConsole />
     </div>
   );
 }
