@@ -895,12 +895,12 @@ function GameScreen({
                   >
                     <div style={{
                       width: 28, height: 28, borderRadius: "50%",
-                      background: "#FEE600", color: "#121414",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontFamily: "'Sora', sans-serif", fontSize: 13, fontWeight: "bold",
+                      background: "#FEE600",
+                      position: "relative",
                       pointerEvents: "none", flexShrink: 0,
                     }}>
-                      {marker.id}
+                      <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 12, height: 1, background: "#121414" }} />
+                      <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 1, height: 12, background: "#121414" }} />
                     </div>
                   </div>
                 );
@@ -1049,12 +1049,12 @@ function RoundResultScreen({
                 >
                   <div style={{
                     width: 28, height: 28, borderRadius: "50%",
-                    background: "#FEE600", color: "#121414",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontFamily: "'Sora', sans-serif", fontSize: 13, fontWeight: "bold",
+                    background: "#FEE600",
+                    position: "relative",
                     flexShrink: 0,
                   }}>
-                    {m.id}
+                    <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 12, height: 1, background: "#121414" }} />
+                    <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 1, height: 12, background: "#121414" }} />
                   </div>
                 </div>
               ))}
