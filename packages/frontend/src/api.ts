@@ -100,12 +100,13 @@ export const api = {
     gameId: string,
     taskIndex: number,
     remainingTimeSeconds: number,
-    skipped: boolean
+    skipped: boolean,
+    markers: Array<{ x: number; y: number }>
   ): Promise<FinishResponse> {
     const res = await fetch(`${BASE_URL}/games/${gameId}/tasks/${taskIndex}/finish`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ remainingTimeSeconds, skipped }),
+      body: JSON.stringify({ remainingTimeSeconds, skipped, markers }),
     });
     if (!res.ok) throw new Error(`Finish task failed: ${res.statusText}`);
     return res.json();

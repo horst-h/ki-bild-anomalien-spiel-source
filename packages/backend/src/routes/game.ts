@@ -25,6 +25,9 @@ const AttemptSchema = z.object({
 const FinishSchema = z.object({
   remainingTimeSeconds: z.number().int().min(0),
   skipped: z.boolean(),
+  markers: z
+    .array(z.object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1) }))
+    .optional(),
 });
 
 // --- POST /api/games – Spiel starten ---
@@ -225,20 +228,50 @@ gameRouter.post("/:gameId/tasks/:taskIndex/finish", (req, res) => {
     .prepare(`SELECT id, polygon_json, explanation FROM anomaly_areas WHERE image_id = ?`)
     .all(task.image_id) as any[];
 
-  const foundIds = new Set(
-    (
-      db
-        .prepare(`SELECT area_id FROM game_task_hits WHERE game_task_id = ?`)
-        .all(task.id) as { area_id: string }[]
-    ).map((r) => r.area_id)
-  );
+  const { remainingTimeSeconds, skipped, markers } = parsed.data;
 
-  const { remainingTimeSeconds, skipped } = parsed.data;
+  let foundIds: Set<string>;
+  let wrongAttempts: number;
+
+  if (markers !== undefined) {
+    // Re-evaluate from final marker positions — clears any intermediate attempt hits
+    db.prepare(`DELETE FROM game_task_hits WHERE game_task_id = ?`).run(task.id);
+    foundIds = new Set<string>();
+    wrongAttempts = 0;
+
+    for (const marker of markers) {
+      let hit = false;
+      for (const area of areas) {
+        const polygon = JSON.parse(area.polygon_json);
+        if (!foundIds.has(area.id) && isPointInPolygon(marker, polygon)) {
+          foundIds.add(area.id);
+          db.prepare(`INSERT INTO game_task_hits (game_task_id, area_id) VALUES (?, ?)`).run(
+            task.id,
+            area.id
+          );
+          hit = true;
+          break;
+        }
+      }
+      if (!hit) wrongAttempts++;
+    }
+
+    db.prepare(`UPDATE game_tasks SET wrong_attempts = ? WHERE id = ?`).run(wrongAttempts, task.id);
+  } else {
+    foundIds = new Set(
+      (
+        db
+          .prepare(`SELECT area_id FROM game_task_hits WHERE game_task_id = ?`)
+          .all(task.id) as { area_id: string }[]
+      ).map((r) => r.area_id)
+    );
+    wrongAttempts = task.wrong_attempts;
+  }
 
   const score = calculateScore({
     totalAreas: areas.length,
     hits: foundIds.size,
-    wrongAttempts: task.wrong_attempts,
+    wrongAttempts,
     maxWrongAttempts: task.max_wrong_attempts,
     remainingTime: remainingTimeSeconds,
     timeLimit: task.time_limit_seconds,

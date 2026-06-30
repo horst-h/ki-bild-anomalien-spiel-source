@@ -475,8 +475,6 @@ interface Marker {
   id: number;        // 1, 2, 3
   x: number;         // 0–100 % of image width
   y: number;         // 0–100 % of image height
-  zoneId: string | null;
-  hit: boolean;      // whether the initial click registered a backend hit
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -591,20 +589,6 @@ function GameScreen({
 
   const displayImageUrl = taskData?.imageUrl ?? image.src;
 
-  // Find which zone a point falls in, ignoring zones already claimed by other markers
-  function findZone(x: number, y: number, excludeMarkerId?: number): string | null {
-    const used = new Set(
-      markersRef.current
-        .filter(m => m.id !== excludeMarkerId)
-        .map(m => m.zoneId)
-        .filter(Boolean) as string[]
-    );
-    for (const zone of image.zones) {
-      if (!used.has(zone.id) && pointInPoly(x, y, zone.pts)) return zone.id;
-    }
-    return null;
-  }
-
   const endRound = useCallback(
     async (tl: number) => {
       if (doneRef.current) return;
@@ -612,13 +596,14 @@ function GameScreen({
       const ms = markersRef.current;
 
       try {
-        // Call API to finish task and get score/resolution
-        const finishResponse = await api.finishTask(gameId, taskIndex, tl, false);
+        // Pass final marker positions to backend for authoritative evaluation
+        const apiMarkers = ms.map(m => ({ x: m.x / 100, y: m.y / 100 }));
+        const finishResponse = await api.finishTask(gameId, taskIndex, tl, false, apiMarkers);
         const areas = finishResponse.resolution.areas;
         const foundZoneIds = areas.filter(a => a.found).map(a => a.id);
         const found = foundZoneIds.length;
         const total = areas.length;
-        const misses = ms.filter(m => !m.zoneId).length;
+        const misses = ms.length - found;
         const timeLimitSec = taskData?.timeLimitSeconds ?? image.timeLimit;
 
         onRoundEnd({
@@ -635,13 +620,10 @@ function GameScreen({
         });
       } catch (err) {
         console.error("Failed to finish task:", err);
-        const foundZoneIds = [...new Set(ms.map(m => m.zoneId).filter(Boolean) as string[])];
-        const found = foundZoneIds.length;
         const total = taskData?.totalAreas ?? image.zones.length;
         const timeLimitSec = taskData?.timeLimitSeconds ?? image.timeLimit;
-        const misses = ms.filter(m => !m.zoneId).length;
-        const score = calcScore(found, total, tl, timeLimitSec, misses, total);
-        onRoundEnd({ score, found, total, misses, timeLeft: tl, timeLimit: timeLimitSec, foundZoneIds, markerPositions: ms.map(m => ({ id: m.id, x: m.x, y: m.y })) });
+        const score = calcScore(0, total, tl, timeLimitSec, ms.length, total);
+        onRoundEnd({ score, found: 0, total, misses: ms.length, timeLeft: tl, timeLimit: timeLimitSec, foundZoneIds: [], markerPositions: ms.map(m => ({ id: m.id, x: m.x, y: m.y })) });
       }
     },
     [image, gameId, taskIndex, onRoundEnd, taskData]
@@ -670,33 +652,16 @@ function GameScreen({
     setCursor({ x, y });
   }
 
-  async function handleOverlayClick(e: React.MouseEvent<HTMLDivElement>) {
+  function handleOverlayClick(e: React.MouseEvent<HTMLDivElement>) {
     if (doneRef.current || draggingId !== null) return;
     const totalAreas = taskData?.totalAreas ?? image.zones.length;
     if (markers.length >= totalAreas) return;
 
     const { x, y } = getRelativePos(e);
     const id = markers.length + 1;
-
-    try {
-      // Send click to backend for validation
-      const result = await api.attempt(gameId, taskIndex, x / 100, y / 100);
-
-      // Add marker locally (always, even if miss - for UI feedback)
-      const zoneId = result.result === "hit" ? result.areaId : null;
-      const updated = [...markersRef.current, { id, x, y, zoneId, hit: result.result === "hit" }];
-      markersRef.current = updated;
-      setMarkers(updated);
-
-      // Optional: Show feedback based on result
-      if (result.result === "hit") {
-        console.log("✅ Hit!", result.explanation);
-      } else if (result.result === "miss") {
-        console.log("❌ Miss");
-      }
-    } catch (err) {
-      console.error("Click attempt failed:", err);
-    }
+    const updated = [...markersRef.current, { id, x, y }];
+    markersRef.current = updated;
+    setMarkers(updated);
   }
 
   function handleMarkerPointerDown(e: React.PointerEvent<HTMLDivElement>, markerId: number) {
@@ -712,37 +677,18 @@ function GameScreen({
     const rect = container.getBoundingClientRect();
     const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
     const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
-    const zoneId = findZone(x, y, markerId);
-    const updated = markersRef.current.map(m => m.id === markerId ? { ...m, x, y, zoneId } : m);
+    const updated = markersRef.current.map(m => m.id === markerId ? { ...m, x, y } : m);
     markersRef.current = updated;
     setMarkers(updated);
     setCursor({ x, y });
   }
 
-  async function handleMarkerPointerUp() {
-    if (draggingId !== null) {
-      const marker = markersRef.current.find(m => m.id === draggingId);
-      if (marker && !marker.hit) {
-        try {
-          const result = await api.attempt(gameId, taskIndex, marker.x / 100, marker.y / 100);
-          if (result.result === "hit") {
-            const updated = markersRef.current.map(m =>
-              m.id === draggingId ? { ...m, zoneId: result.areaId, hit: true } : m
-            );
-            markersRef.current = updated;
-            setMarkers(updated);
-          }
-        } catch (err) {
-          console.error("Drag re-attempt failed:", err);
-        }
-      }
-    }
+  function handleMarkerPointerUp() {
     setDraggingId(null);
   }
 
   // Derived counts
   const totalAreas = taskData?.totalAreas ?? image.zones.length;
-  const foundCount = new Set(markers.map(m => m.zoneId).filter(Boolean)).size;
   const ratio = timeLeft / (taskData?.timeLimitSeconds ?? image.timeLimit);
   const timerColor = ratio > 0.5 ? "#00FF41" : ratio > 0.25 ? "#FEE600" : "#FF4444";
   const timerPulse = ratio <= 0.25;
