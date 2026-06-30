@@ -91,8 +91,12 @@ fi
 
 echo "=== 8. Caddy konfigurieren ==="
 if [ -n "$DOMAIN" ]; then
+  # Sicherstellen, dass die Basic-Auth-Importdatei existiert
+  touch /etc/caddy/basicauth_block
+
   cat > /etc/caddy/Caddyfile <<EOF
 ${DOMAIN} {
+    import basicauth_block
     reverse_proxy localhost:3001
 }
 EOF
