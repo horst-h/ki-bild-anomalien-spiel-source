@@ -530,22 +530,28 @@ function RulesScreen({ onStart }: { onStart: () => void }) {
           ))}
         </div>
 
-        {/* Start button */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={onStart}
-          className="w-full py-4 font-display font-black uppercase tracking-[0.3em] text-base"
-          style={{
-            background: "#FEE600",
-            color: "#121414",
-            border: "none",
-            cursor: "pointer",
-            boxShadow: "0 0 32px rgba(254,230,0,0.25)",
-          }}
-        >
-          Los geht's →
-        </motion.button>
+        {/* Disclaimer + Start button */}
+        <div className="flex flex-col gap-4">
+          <p className="font-code text-xs leading-relaxed" style={{ color: "#6B6E69" }}>
+            ℹ️ Übrigens: Nicht jede Auffälligkeit ist eindeutig ein KI-Fehler – manches Ungewöhnliche gibt es auch in der Realität. Es geht um Wahrscheinlichkeiten, nicht um Gewissheit.
+          </p>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={onStart}
+            className="w-full py-4 font-display font-black uppercase tracking-[0.3em] text-base"
+            style={{
+              background: "#FEE600",
+              color: "#121414",
+              border: "none",
+              cursor: "pointer",
+              boxShadow: "0 0 32px rgba(254,230,0,0.25)",
+            }}
+          >
+            Los geht's →
+          </motion.button>
+        </div>
       </motion.div>
     </div>
   );
@@ -971,7 +977,7 @@ function RoundResultScreen({
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Image */}
         <div className="flex-1 p-6 overflow-auto flex items-start">
-          <div className="w-full">
+          <div className="w-full" style={{ maxWidth: "min(72vh, 820px)" }}>
             <div style={{ paddingBottom: "66.67%", position: "relative" }}>
               <img
                 src={displayImageUrl}
