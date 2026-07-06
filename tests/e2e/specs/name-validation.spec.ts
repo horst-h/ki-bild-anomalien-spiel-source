@@ -32,7 +32,7 @@ test.describe("Namens-Validierung", () => {
     // Regelscreen erscheint zwischen Avatar- und Spielscreen
     await page.getByRole("button", { name: "Los geht's →" }).click();
     // GameScreen lädt (kurz "Lädt …" oder Canvas erscheint)
-    await expect(page.getByRole("button", { name: "FERTIG →" })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("button", { name: "Auswertung →" })).toBeVisible({ timeout: 10_000 });
     // Kein Fehler auf dem Name-Screen mehr
     await expect(page.getByRole("button", { name: "Los geht's!" })).not.toBeVisible();
   });

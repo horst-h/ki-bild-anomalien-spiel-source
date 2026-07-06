@@ -6,11 +6,11 @@ async function startGame(page: any, playerName = "E2E-Fuchs") {
   await page.fill("#playerName", playerName);
   await page.getByRole("button", { name: "Los geht's!" }).click();
   await page.getByRole("button", { name: "Los geht's →" }).click();
-  await expect(page.getByRole("button", { name: "FERTIG →" })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("button", { name: "Auswertung →" })).toBeVisible({ timeout: 15_000 });
 }
 
 async function skipTaskAndContinue(page: any) {
-  await page.getByRole("button", { name: "FERTIG →" }).click();
+  await page.getByRole("button", { name: "Auswertung →" }).click();
   const nextBtn = page.getByRole("button", { name: /NÄCHSTES BILD|AUSWERTUNG/ });
   await expect(nextBtn).toBeVisible({ timeout: 8_000 });
   await nextBtn.dispatchEvent("click");
@@ -24,7 +24,7 @@ test.describe("Vollständiger Spielablauf", () => {
       await skipTaskAndContinue(page);
     }
 
-    await expect(page.getByText("ANALYSE ABGESCHLOSSEN")).toBeVisible();
+    await expect(page.getByText("DAS WAR STARK!")).toBeVisible();
     await expect(page.getByRole("heading", { name: "SkipFuchs" })).toBeVisible();
     await expect(page.getByText("GESAMTPUNKTZAHL")).toBeVisible();
   });
@@ -36,7 +36,7 @@ test.describe("Vollständiger Spielablauf", () => {
       await skipTaskAndContinue(page);
     }
 
-    await expect(page.getByText("ANALYSE ABGESCHLOSSEN")).toBeVisible();
+    await expect(page.getByText("DAS WAR STARK!")).toBeVisible();
     // 0 Treffer → Basis-Score 0 (keine Zeit- oder Trefferbonus)
     await expect(page.getByText("GESAMTPUNKTZAHL").locator("~ p").first()).toContainText("0");
   });
@@ -88,7 +88,7 @@ test.describe("Vollständiger Spielablauf", () => {
       await skipTaskAndContinue(page);
     }
 
-    await expect(page.getByText("ANALYSE ABGESCHLOSSEN")).toBeVisible();
+    await expect(page.getByText("DAS WAR STARK!")).toBeVisible();
     await expect(page.getByRole("heading", { name: playerName })).toBeVisible();
   });
 });
