@@ -63,8 +63,8 @@ describe("suitabilityForLevel", () => {
     expect(suitabilityForLevel("waldfuchs")).toBe("allgemein");
   });
 
-  test("erzfuchs → allgemein", () => {
-    expect(suitabilityForLevel("erzfuchs")).toBe("allgemein");
+  test("erzfuchs → anspruchsvoll", () => {
+    expect(suitabilityForLevel("erzfuchs")).toBe("anspruchsvoll");
   });
 
   test("unbekanntes Level → allgemein (sicherer Default)", () => {

@@ -23,6 +23,7 @@ const imagesDdl = (
   { sql: string } | undefined
 )?.sql ?? "";
 if (!imagesDdl.includes("anspruchsvoll")) {
+  db.pragma("foreign_keys = OFF");
   db.exec(`
     BEGIN TRANSACTION;
     CREATE TABLE images_new (
@@ -42,6 +43,7 @@ if (!imagesDdl.includes("anspruchsvoll")) {
     ALTER TABLE images_new RENAME TO images;
     COMMIT;
   `);
+  db.pragma("foreign_keys = ON");
 }
 
 export const IMAGES_DIR = imagesDir;
