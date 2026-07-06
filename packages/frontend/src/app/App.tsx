@@ -233,7 +233,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-background relative flex flex-col items-center justify-center p-8 overflow-hidden"
+      className="h-screen bg-background relative flex flex-col items-center justify-center p-8 overflow-hidden"
     >
       <ScanLines />
       <CornerBrackets />
@@ -249,13 +249,6 @@ function StartScreen({ onStart }: { onStart: () => void }) {
       />
 
       <div className="relative z-10 text-center max-w-xl">
-        <p
-          className="font-code text-xs tracking-[0.4em] mb-4 opacity-60"
-          style={{ color: "#FEE600" }}
-        >
-          SYSTEM AKTIV // KI-ANALYSE MODUL v2.4
-        </p>
-
         <h1
           className="font-display text-[clamp(4rem,12vw,9rem)] font-black uppercase leading-none tracking-tight mb-1"
           style={{ color: "#FEE600" }}
@@ -269,7 +262,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           VISIER
         </h1>
 
-        <div className="flex items-center justify-center gap-4 my-6">
+        <div className="flex items-center justify-center gap-4 my-4">
           <div className="flex-1 h-px" style={{ background: "rgba(254,230,0,0.3)" }} />
           <span className="font-code text-xs tracking-widest opacity-40" style={{ color: "#FEE600" }}>
             ◆
@@ -281,17 +274,15 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         <motion.div
           animate={{ y: [0, -10, 0] }}
           transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
-          className="flex justify-center mb-6"
+          className="flex justify-center mb-4"
         >
-          <div className="w-48 h-48 rounded-full bg-white flex items-center justify-center overflow-hidden shadow-2xl">
-            <img src={fuchsYoga} alt="Fuchs Maskottchen" className="w-44 h-44 object-contain" />
+          <div className="w-40 h-40 rounded-full bg-white flex items-center justify-center overflow-hidden shadow-2xl">
+            <img src={fuchsYoga} alt="Fuchs Maskottchen" className="w-36 h-36 object-contain" />
           </div>
         </motion.div>
 
-        <p className="font-code text-muted-foreground mb-8 leading-relaxed max-w-sm mx-auto text-[15px]">
-          Entdecke KI-Anomalien in synthetischen Bildern.
-          <br />
-          Findest Du alle Fehler?
+        <p className="font-code text-muted-foreground mb-6 leading-relaxed max-w-sm mx-auto text-[15px]">
+          Echt oder KI? Trainiere deinen Blick und entlarve die Fälschungen!
         </p>
 
         <div className="flex flex-col gap-3 items-center">
@@ -306,8 +297,8 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           </motion.button>
         </div>
 
-        <p className="mt-10 font-code text-xs opacity-25" style={{ color: "#FEE600" }}>
-          KINETIC TRUTH // FESTIVAL EDITION 2025
+        <p className="mt-6 font-code text-xs opacity-25" style={{ color: "#FEE600" }}>
+          KI-Festival Heilbronn Juli 2026
         </p>
       </div>
     </motion.div>
@@ -365,7 +356,7 @@ function AvatarScreen({
               setName(e.target.value);
               if (error) onErrorClear?.();
             }}
-            placeholder="CODENAME EINGEBEN..."
+            placeholder="Dein Fuchsname?..."
             maxLength={30}
             className="w-full py-3 px-4 font-code text-base text-foreground tracking-wider focus:outline-none placeholder:opacity-30"
             style={{
@@ -384,7 +375,7 @@ function AvatarScreen({
         {/* Avatar selection */}
         <div className="mb-8">
           <label className="font-code text-xs tracking-[0.25em] block mb-4" style={{ color: "#FEE600" }}>
-            ERFAHRUNGS-KLASSE WÄHLEN
+            Wie viel Fuchs steckt in dir?
           </label>
           <div className="grid grid-cols-3 gap-4">
             {(Object.entries(AVATAR_DEFS) as [AvatarType, typeof AVATAR_DEFS[AvatarType]][]).map(([key, def]) => {
@@ -903,7 +894,7 @@ function GameScreen({
             cursor: "pointer",
           }}
         >
-          FERTIG →
+          Auswertung →
         </motion.button>
       </div>
 
@@ -976,8 +967,8 @@ function RoundResultScreen({
       {/* Body */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Image */}
-        <div className="flex-1 p-6 overflow-auto flex items-start">
-          <div className="w-full" style={{ maxWidth: "min(72vh, 820px)" }}>
+        <div className="flex-[3] p-6 overflow-auto">
+          <div className="w-full">
             <div style={{ paddingBottom: "66.67%", position: "relative" }}>
               <img
                 src={displayImageUrl}
@@ -1069,11 +1060,11 @@ function RoundResultScreen({
 
         {/* Sidebar */}
         <div
-          className="w-80 flex flex-col p-6 overflow-auto shrink-0"
+          className="flex-[2] min-w-0 flex flex-col p-6 overflow-auto"
           style={{ borderLeft: "1px solid rgba(254,230,0,0.12)" }}
         >
           <p className="font-code text-sm tracking-widest mb-4" style={{ color: "#FEE600" }}>
-            ANOMALIE-BERICHT
+            SO GUT WARST DU:
           </p>
 
           <div className="space-y-3">
@@ -1196,7 +1187,7 @@ function FinalScreen({
           <FoxIcon type={player.avatar} size={72} />
           <div>
             <p className="font-code text-xs tracking-widest opacity-60" style={{ color: "#FEE600" }}>
-              ANALYSE ABGESCHLOSSEN
+              DAS WAR STARK! 
             </p>
             <h2 className="font-display font-black text-4xl uppercase tracking-tight text-foreground">
               {player.name}
