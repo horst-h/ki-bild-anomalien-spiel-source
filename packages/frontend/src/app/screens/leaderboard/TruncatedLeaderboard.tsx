@@ -7,12 +7,12 @@ const RANK_COLORS = ["#FEE600", "#C0C0C0", "#CD7F32"];
 
 interface Props {
   scores: LeaderboardEntry[];
-  currentPlayerRank: number;
+  currentPlayerName: string;
   topN?: number;
 }
 
-export function TruncatedLeaderboard({ scores, currentPlayerRank, topN = TOP_N }: Props) {
-  const rows = buildDisplayList(scores, currentPlayerRank, topN);
+export function TruncatedLeaderboard({ scores, currentPlayerName, topN = TOP_N }: Props) {
+  const rows = buildDisplayList(scores, currentPlayerName, topN);
 
   return (
     <div style={{ border: "1px solid rgba(254,230,0,0.12)" }}>

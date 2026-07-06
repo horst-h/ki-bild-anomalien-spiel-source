@@ -20,18 +20,22 @@ export type DisplayRow =
  */
 export function buildDisplayList(
   allScores: LeaderboardEntry[],
-  currentPlayerRank: number,
+  currentPlayerName: string,
   topN: number = TOP_N
 ): DisplayRow[] {
   if (allScores.length === 0) return [];
 
   const topEntries = allScores.slice(0, topN);
 
-  if (currentPlayerRank <= topN) {
+  // Identify current player by name, not rank — rank is ambiguous on ties.
+  const currentIdx = allScores.findIndex((e) => e.playerName === currentPlayerName);
+  const currentPlayerRank = currentIdx !== -1 ? allScores[currentIdx].rank : -1;
+
+  if (currentPlayerRank !== -1 && currentPlayerRank <= topN) {
     return topEntries.map((entry) => ({
       type: "entry" as const,
       entry,
-      isCurrentPlayer: entry.rank === currentPlayerRank,
+      isCurrentPlayer: entry.playerName === currentPlayerName,
     }));
   }
 
@@ -41,7 +45,6 @@ export function buildDisplayList(
     isCurrentPlayer: false,
   }));
 
-  const currentIdx = allScores.findIndex((e) => e.rank === currentPlayerRank);
   if (currentIdx === -1) return topRows;
 
   // Only insert placeholder when the gap between the top-N block and
@@ -66,7 +69,7 @@ export function buildDisplayList(
   const contextRows: DisplayRow[] = contextEntries.map((entry) => ({
     type: "entry" as const,
     entry,
-    isCurrentPlayer: entry.rank === currentPlayerRank,
+    isCurrentPlayer: entry.playerName === currentPlayerName,
   }));
 
   return [

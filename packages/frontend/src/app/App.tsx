@@ -1255,7 +1255,7 @@ function FinalScreen({
 
         {/* Leaderboard */}
         <div className="mb-6">
-          <TruncatedLeaderboard scores={leaderboard} currentPlayerRank={rank} />
+          <TruncatedLeaderboard scores={leaderboard} currentPlayerName={player.name} />
         </div>
 
         <motion.button
