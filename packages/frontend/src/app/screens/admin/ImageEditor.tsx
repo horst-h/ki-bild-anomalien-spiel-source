@@ -381,6 +381,7 @@ export function ImageEditor({ image, onClose, onSaved, onDeleted }: Props) {
               >
                 <option value="kinderfreundlich">kinderfreundlich</option>
                 <option value="allgemein">allgemein</option>
+                <option value="anspruchsvoll">anspruchsvoll</option>
               </select>
             </label>
 

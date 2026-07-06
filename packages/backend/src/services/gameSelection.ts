@@ -1,7 +1,7 @@
 import { db } from "../db/client.js";
 
 export type Category = "leicht" | "mittel" | "schwer";
-export type Suitability = "kinderfreundlich" | "allgemein";
+export type Suitability = "kinderfreundlich" | "allgemein" | "anspruchsvoll";
 
 export interface ImageRow {
   id: string;
@@ -13,13 +13,16 @@ export interface ImageRow {
   max_wrong_attempts: number;
 }
 
-// Avatar-Level-Skala (siehe Anforderungsdokument Abschnitt 4a).
-// Die ersten Level gelten als "kinderfreundlich", der Rest als "allgemein".
+// Avatar-Level → Zielgruppen-Tag (siehe Anforderungsdokument Abschnitt 4a).
 const AVATAR_LEVELS = ["jungfuchs", "waldfuchs", "erzfuchs"] as const;
-const CHILD_FRIENDLY_LEVELS = new Set<string>(["jungfuchs"]);
+const SUITABILITY_MAP: Record<string, Suitability> = {
+  jungfuchs: "kinderfreundlich",
+  waldfuchs: "allgemein",
+  erzfuchs: "anspruchsvoll",
+};
 
 export function suitabilityForLevel(avatarLevel: string): Suitability {
-  return CHILD_FRIENDLY_LEVELS.has(avatarLevel) ? "kinderfreundlich" : "allgemein";
+  return SUITABILITY_MAP[avatarLevel] ?? "allgemein";
 }
 
 function fetchPublished(
