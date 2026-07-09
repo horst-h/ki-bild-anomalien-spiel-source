@@ -379,9 +379,9 @@ export function ImageEditor({ image, onClose, onSaved, onDeleted }: Props) {
                 className="w-full font-code text-sm bg-transparent text-foreground outline-none px-2 py-1.5"
                 style={{ border: "1px solid rgba(254,230,0,0.2)", background: "#121414" }}
               >
-                <option value="kinderfreundlich">kinderfreundlich</option>
-                <option value="allgemein">allgemein</option>
-                <option value="anspruchsvoll">anspruchsvoll</option>
+                <option value="jungfuchs">Jungfuchs</option>
+                <option value="waldfuchs">Waldfuchs</option>
+                <option value="erzfuchs">Erzfuchs</option>
               </select>
             </label>
 

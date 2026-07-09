@@ -25,7 +25,7 @@ let idCounter = 0;
 
 function insertImage(
   category: "leicht" | "mittel" | "schwer",
-  suitability: "kinderfreundlich" | "allgemein" = "allgemein"
+  suitability: "jungfuchs" | "waldfuchs" | "erzfuchs" = "waldfuchs"
 ): string {
   const id = `img-${++idCounter}`;
   testDb
@@ -55,21 +55,21 @@ beforeEach(() => {
 // ── suitabilityForLevel ───────────────────────────────────────────────────────
 
 describe("suitabilityForLevel", () => {
-  test("jungfuchs → kinderfreundlich", () => {
-    expect(suitabilityForLevel("jungfuchs")).toBe("kinderfreundlich");
+  test("jungfuchs → jungfuchs", () => {
+    expect(suitabilityForLevel("jungfuchs")).toBe("jungfuchs");
   });
 
-  test("waldfuchs → allgemein", () => {
-    expect(suitabilityForLevel("waldfuchs")).toBe("allgemein");
+  test("waldfuchs → waldfuchs", () => {
+    expect(suitabilityForLevel("waldfuchs")).toBe("waldfuchs");
   });
 
-  test("erzfuchs → anspruchsvoll", () => {
-    expect(suitabilityForLevel("erzfuchs")).toBe("anspruchsvoll");
+  test("erzfuchs → erzfuchs", () => {
+    expect(suitabilityForLevel("erzfuchs")).toBe("erzfuchs");
   });
 
-  test("unbekanntes Level → allgemein (sicherer Default)", () => {
-    expect(suitabilityForLevel("unbekannt")).toBe("allgemein");
-    expect(suitabilityForLevel("")).toBe("allgemein");
+  test("unbekanntes Level → waldfuchs (sicherer Default)", () => {
+    expect(suitabilityForLevel("unbekannt")).toBe("waldfuchs");
+    expect(suitabilityForLevel("")).toBe("waldfuchs");
   });
 });
 
@@ -118,34 +118,34 @@ describe("selectTasksForGame", () => {
     expect(uniqueIds(tasks)).toBeLessThan(3);
   });
 
-  test("jungfuchs bevorzugt kinderfreundlich-Bilder", () => {
-    // Je eine kinderfreundlich- und eine allgemein-Version pro Kategorie
-    const kfLeicht = insertImage("leicht", "kinderfreundlich");
-    insertImage("leicht", "allgemein");
-    const kfMittel = insertImage("mittel", "kinderfreundlich");
-    insertImage("mittel", "allgemein");
-    const kfSchwer = insertImage("schwer", "kinderfreundlich");
-    insertImage("schwer", "allgemein");
+  test("jungfuchs bevorzugt jungfuchs-Bilder", () => {
+    // Je eine jungfuchs- und eine waldfuchs-Version pro Kategorie
+    const jfLeicht = insertImage("leicht", "jungfuchs");
+    insertImage("leicht", "waldfuchs");
+    const jfMittel = insertImage("mittel", "jungfuchs");
+    insertImage("mittel", "waldfuchs");
+    const jfSchwer = insertImage("schwer", "jungfuchs");
+    insertImage("schwer", "waldfuchs");
 
     const tasks = selectTasksForGame("jungfuchs", testDb);
 
-    // Mit je 1 kinderfreundlich-Option pro Kategorie ist das Ergebnis deterministisch
+    // Mit je 1 jungfuchs-Option pro Kategorie ist das Ergebnis deterministisch
     const ids = tasks.map((t) => t.id);
-    expect(ids).toContain(kfLeicht);
-    expect(ids).toContain(kfMittel);
-    expect(ids).toContain(kfSchwer);
-    tasks.forEach((t) => expect(t.suitability).toBe("kinderfreundlich"));
+    expect(ids).toContain(jfLeicht);
+    expect(ids).toContain(jfMittel);
+    expect(ids).toContain(jfSchwer);
+    tasks.forEach((t) => expect(t.suitability).toBe("jungfuchs"));
   });
 
-  test("jungfuchs fällt auf allgemein zurück wenn kein kinderfreundlich-Bild vorhanden", () => {
-    insertImage("leicht", "allgemein");
-    insertImage("mittel", "allgemein");
-    insertImage("schwer", "allgemein");
+  test("jungfuchs fällt auf waldfuchs zurück wenn keine jungfuchs-Bilder vorhanden", () => {
+    insertImage("leicht", "waldfuchs");
+    insertImage("mittel", "waldfuchs");
+    insertImage("schwer", "waldfuchs");
 
     const tasks = selectTasksForGame("jungfuchs", testDb);
 
     expect(tasks).toHaveLength(3);
-    tasks.forEach((t) => expect(t.suitability).toBe("allgemein"));
+    tasks.forEach((t) => expect(t.suitability).toBe("waldfuchs"));
   });
 
   test("Fallback schwer → mittel → leicht wenn schwer-Bilder fehlen", () => {
@@ -180,17 +180,32 @@ describe("selectTasksForGame", () => {
     );
   });
 
-  test("waldfuchs und erzfuchs bekommen dieselben Bilder (beide → allgemein)", () => {
-    insertImage("leicht");
-    insertImage("mittel");
-    insertImage("schwer");
+  test("erzfuchs fällt auf waldfuchs-Bilder zurück wenn keine erzfuchs-Bilder vorhanden", () => {
+    insertImage("leicht", "waldfuchs");
+    insertImage("mittel", "waldfuchs");
+    insertImage("schwer", "waldfuchs");
 
-    // Beide sollen aus demselben Bilderpool schöpfen
-    const waldfuchsTasks = selectTasksForGame("waldfuchs", testDb);
-    const erzfuchsTasks = selectTasksForGame("erzfuchs", testDb);
+    const tasks = selectTasksForGame("erzfuchs", testDb);
 
-    // Da nur je 1 Bild pro Kategorie, sind die IDs identisch
-    expect(waldfuchsTasks.map((t) => t.id)).toEqual(erzfuchsTasks.map((t) => t.id));
+    expect(tasks).toHaveLength(3);
+    tasks.forEach((t) => expect(t.suitability).toBe("waldfuchs"));
+  });
+
+  test("erzfuchs bevorzugt erzfuchs-Bilder wenn vorhanden", () => {
+    const efLeicht = insertImage("leicht", "erzfuchs");
+    insertImage("leicht", "waldfuchs");
+    const efMittel = insertImage("mittel", "erzfuchs");
+    insertImage("mittel", "waldfuchs");
+    const efSchwer = insertImage("schwer", "erzfuchs");
+    insertImage("schwer", "waldfuchs");
+
+    const tasks = selectTasksForGame("erzfuchs", testDb);
+
+    const ids = tasks.map((t) => t.id);
+    expect(ids).toContain(efLeicht);
+    expect(ids).toContain(efMittel);
+    expect(ids).toContain(efSchwer);
+    tasks.forEach((t) => expect(t.suitability).toBe("erzfuchs"));
   });
 
   test("nur veröffentlichte Bilder (status='published') werden berücksichtigt", () => {
@@ -198,7 +213,7 @@ describe("selectTasksForGame", () => {
     testDb
       .prepare(
         `INSERT INTO images (id, title, image_path, category, suitability, time_limit_seconds, max_wrong_attempts, status)
-         VALUES ('draft-1', 'Draft', 'draft.webp', 'leicht', 'allgemein', 60, 6, 'draft')`
+         VALUES ('draft-1', 'Draft', 'draft.webp', 'leicht', 'waldfuchs', 60, 6, 'draft')`
       )
       .run();
 

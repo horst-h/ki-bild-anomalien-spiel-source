@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS images (
   title TEXT NOT NULL,
   image_path TEXT NOT NULL,
   category TEXT NOT NULL CHECK (category IN ('leicht','mittel','schwer')),
-  suitability TEXT NOT NULL CHECK (suitability IN ('kinderfreundlich','allgemein','anspruchsvoll')),
+  suitability TEXT NOT NULL CHECK (suitability IN ('jungfuchs','waldfuchs','erzfuchs')),
   time_limit_seconds INTEGER NOT NULL,
   max_wrong_attempts INTEGER NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('draft','published','archived')) DEFAULT 'draft',

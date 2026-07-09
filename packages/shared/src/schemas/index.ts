@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // Bild-Kategorie und Eignungs-Tag (siehe Anforderungsdokument Abschnitt 4 / 4a)
 export const ImageCategory = z.enum(["leicht", "mittel", "schwer"]);
-export const ImageSuitability = z.enum(["kinderfreundlich", "allgemein", "anspruchsvoll"]);
+export const ImageSuitability = z.enum(["jungfuchs", "waldfuchs", "erzfuchs"]);
 export const ImageStatus = z.enum(["draft", "published", "archived"]);
 
 // Normalisierte Polygon-Koordinaten (0..1, relativ zur Bildgröße)
