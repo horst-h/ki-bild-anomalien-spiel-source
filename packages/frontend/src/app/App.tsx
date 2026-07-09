@@ -1156,10 +1156,10 @@ function FinalScreen({
   useEffect(() => {
     (async () => {
       try {
-        const [summaryData, boardData] = await Promise.all([
-          api.getSummary(gameId),
-          api.getLeaderboard(),
-        ]);
+        // getSummary muss zuerst abgeschlossen sein, da es den Leaderboard-Eintrag
+        // als Seiteneffekt schreibt. Erst danach getLeaderboard aufrufen.
+        const summaryData = await api.getSummary(gameId);
+        const boardData = await api.getLeaderboard();
         setSummary(summaryData);
         setLeaderboard(boardData);
       } catch (err) {
