@@ -32,7 +32,7 @@ export default async function globalSetup() {
   const insertImage = db.prepare(
     `INSERT OR IGNORE INTO images
        (id, title, image_path, category, suitability, time_limit_seconds, max_wrong_attempts, status)
-     VALUES (?, ?, 'e2e-placeholder.webp', ?, 'allgemein', 60, 6, 'published')`
+     VALUES (?, ?, 'e2e-placeholder.webp', ?, 'waldfuchs', 60, 6, 'published')`
   );
   const insertArea = db.prepare(
     `INSERT OR IGNORE INTO anomaly_areas (id, image_id, polygon_json, explanation)
