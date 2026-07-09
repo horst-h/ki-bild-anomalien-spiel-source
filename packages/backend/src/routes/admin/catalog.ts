@@ -32,7 +32,7 @@ const AreaSchema = z.object({
 const UpdateImageSchema = z.object({
   title: z.string().min(1).optional(),
   category: z.enum(["leicht", "mittel", "schwer"]).optional(),
-  suitability: z.enum(["kinderfreundlich", "allgemein"]).optional(),
+  suitability: z.enum(["jungfuchs", "waldfuchs", "erzfuchs"]).optional(),
   timeLimitSeconds: z.number().int().positive().optional(),
   maxWrongAttempts: z.number().int().positive().optional(),
   anomalyAreas: z.array(AreaSchema).optional(),
@@ -81,7 +81,7 @@ adminCatalogRouter.post("/", upload.single("image"), async (req, res) => {
 
   db.prepare(
     `INSERT INTO images (id, title, image_path, category, suitability, time_limit_seconds, max_wrong_attempts, status)
-     VALUES (?, ?, ?, 'leicht', 'allgemein', 60, 6, 'draft')`
+     VALUES (?, ?, ?, 'leicht', 'waldfuchs', 60, 6, 'draft')`
   ).run(id, title, filename);
 
   res.status(201).json({ id, title, imagePath: filename, status: "draft" });
@@ -164,6 +164,22 @@ adminCatalogRouter.post("/:id/publish", (req, res) => {
     req.params.id
   );
   res.json({ status: "published" });
+});
+
+// --- POST /api/admin/images/:id/archive ---
+adminCatalogRouter.post("/:id/archive", (req, res) => {
+  const image = db.prepare(`SELECT id FROM images WHERE id = ?`).get(req.params.id);
+  if (!image) { res.status(404).json({ error: "Bild nicht gefunden" }); return; }
+  db.prepare(`UPDATE images SET status = 'archived', updated_at = datetime('now') WHERE id = ?`).run(req.params.id);
+  res.json({ status: "archived" });
+});
+
+// --- POST /api/admin/images/:id/unpublish – zurück auf draft ---
+adminCatalogRouter.post("/:id/unpublish", (req, res) => {
+  const image = db.prepare(`SELECT id FROM images WHERE id = ?`).get(req.params.id);
+  if (!image) { res.status(404).json({ error: "Bild nicht gefunden" }); return; }
+  db.prepare(`UPDATE images SET status = 'draft', updated_at = datetime('now') WHERE id = ?`).run(req.params.id);
+  res.json({ status: "draft" });
 });
 
 // --- DELETE /api/admin/images/:id ---

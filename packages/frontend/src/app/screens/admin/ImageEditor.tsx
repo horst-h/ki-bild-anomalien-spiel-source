@@ -147,6 +147,20 @@ export function ImageEditor({ image, onClose, onSaved, onDeleted }: Props) {
     }
   }
 
+  async function archive() {
+    setSaveError(null);
+    const res = await fetch(`/api/admin/images/${image.id}/archive`, { method: "POST", credentials: "include" });
+    if (!res.ok) { setSaveError("Archivieren fehlgeschlagen"); return; }
+    onSaved({ ...image, title, category, suitability, time_limit_seconds: timeLimit, max_wrong_attempts: maxWrong, anomalyAreas: areas, status: "archived" });
+  }
+
+  async function unpublish() {
+    setSaveError(null);
+    const res = await fetch(`/api/admin/images/${image.id}/unpublish`, { method: "POST", credentials: "include" });
+    if (!res.ok) { setSaveError("Zurücksetzen fehlgeschlagen"); return; }
+    onSaved({ ...image, title, category, suitability, time_limit_seconds: timeLimit, max_wrong_attempts: maxWrong, anomalyAreas: areas, status: "draft" });
+  }
+
   async function doDelete() {
     setDeleting(true);
     const res = await fetch(`/api/admin/images/${image.id}`, { method: "DELETE", credentials: "include" });
@@ -435,6 +449,38 @@ export function ImageEditor({ image, onClose, onSaved, onDeleted }: Props) {
                   style={{ background: "#00FF41", color: "#121414", border: "none" }}
                 >
                   {publishing ? "PUBLISHING …" : "SPEICHERN & PUBLISHEN"}
+                </button>
+              )}
+
+              {image.status === "published" && (
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={unpublish}
+                    disabled={saving || publishing}
+                    className="flex-1 font-code text-xs tracking-widest py-2 disabled:opacity-40"
+                    style={{ border: "1px solid rgba(254,230,0,0.4)", color: "#FEE600", background: "rgba(254,230,0,0.06)" }}
+                  >
+                    ZURÜCK ZU DRAFT
+                  </button>
+                  <button
+                    onClick={archive}
+                    disabled={saving || publishing}
+                    className="flex-1 font-code text-xs tracking-widest py-2 disabled:opacity-40"
+                    style={{ border: "1px solid rgba(168,171,167,0.3)", color: "#A8ABA7", background: "rgba(168,171,167,0.06)" }}
+                  >
+                    ARCHIVIEREN
+                  </button>
+                </div>
+              )}
+
+              {image.status === "archived" && (
+                <button
+                  onClick={unpublish}
+                  disabled={saving || publishing}
+                  className="w-full font-code text-xs tracking-widest py-2 disabled:opacity-40"
+                  style={{ border: "1px solid rgba(254,230,0,0.4)", color: "#FEE600", background: "rgba(254,230,0,0.06)" }}
+                >
+                  ZURÜCK ZU DRAFT
                 </button>
               )}
 
