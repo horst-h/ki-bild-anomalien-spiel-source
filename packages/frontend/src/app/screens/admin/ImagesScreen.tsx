@@ -14,6 +14,12 @@ interface AdminImage {
   anomalyAreas: { id?: string; polygon: { x: number; y: number }[]; explanation: string }[];
 }
 
+const SUITABILITY_COLOR: Record<string, string> = {
+  jungfuchs: "#00FF41",
+  waldfuchs: "#FEE600",
+  erzfuchs:  "#8A2BE2",
+};
+
 const STATUS_STYLE: Record<string, { color: string; bg: string; border: string; label: string }> = {
   published: { color: "#00FF41", bg: "rgba(0,255,65,0.08)", border: "rgba(0,255,65,0.3)", label: "PUBLISHED" },
   draft:     { color: "#FEE600", bg: "rgba(254,230,0,0.08)", border: "rgba(254,230,0,0.3)", label: "DRAFT" },
@@ -141,7 +147,13 @@ export function ImagesScreen() {
                   />
                   <div className="p-2.5">
                     <p className="font-code text-xs text-foreground truncate font-bold">{img.title}</p>
-                    <p className="font-code text-xs text-muted-foreground truncate opacity-50 mt-0.5">{img.category}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="font-code text-xs text-muted-foreground opacity-50">{img.category}</span>
+                      <span className="font-code text-xs opacity-30 text-muted-foreground">·</span>
+                      <span className="font-code text-xs" style={{ color: SUITABILITY_COLOR[img.suitability] ?? "#A8ABA7" }}>
+                        {img.suitability}
+                      </span>
+                    </div>
                     <div className="flex items-center justify-between mt-2">
                       <span
                         className="font-code text-xs px-1.5 py-0.5"
