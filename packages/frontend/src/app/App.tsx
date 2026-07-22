@@ -703,7 +703,7 @@ function GameScreen({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-background flex flex-col"
+      className="h-screen bg-background flex flex-col"
     >
       {/* Top bar */}
       <div className="shrink-0 flex justify-center pt-2 pb-0 px-8" style={{ background: "#121414" }}>
