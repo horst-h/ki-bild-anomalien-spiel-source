@@ -706,10 +706,9 @@ function GameScreen({
       className="min-h-screen bg-background flex flex-col"
     >
       {/* Top bar */}
-      {/* Top bar */}
-      <div className="shrink-0 flex justify-center pt-3 pb-0 px-8" style={{ background: "#121414" }}>
+      <div className="shrink-0 flex justify-center pt-2 pb-0 px-8" style={{ background: "#121414" }}>
         <div
-          className="flex items-center justify-between w-full max-w-4xl px-6 py-2"
+          className="flex items-center justify-between w-full max-w-4xl px-6 py-1"
           style={{
             background: "rgba(254,230,0,0.04)",
             border: "1px solid rgba(254,230,0,0.2)",
@@ -717,34 +716,34 @@ function GameScreen({
         >
           {/* Timer */}
           <div className="flex flex-col items-center flex-1">
-            <span className="font-code text-sm tracking-widest text-muted-foreground">
+            <span className="font-code text-xs tracking-widest text-muted-foreground">
               RUNDE {round}/{TOTAL_ROUNDS} — {image.level.toUpperCase()}
             </span>
             <motion.div
               animate={timerPulse ? { scale: [1, 1.06, 1] } : {}}
               transition={{ repeat: Infinity, duration: 0.6 }}
-              className="flex items-center gap-1.5 mt-0.5"
+              className="flex items-center gap-1.5"
             >
-              <Clock size={15} style={{ color: timerColor }} />
-              <span className="font-display font-black text-3xl" style={{ color: timerColor }}>
+              <Clock size={13} style={{ color: timerColor }} />
+              <span className="font-display font-black text-2xl" style={{ color: timerColor }}>
                 {fmtTime(timeLeft)}
               </span>
             </motion.div>
           </div>
 
           {/* Markers placed */}
-          <div className="flex items-center gap-3">
-            <span className="font-code text-sm text-muted-foreground tracking-widest">MARKIERUNGEN GESETZT</span>
-            <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <span className="font-code text-xs text-muted-foreground tracking-widest">MARKIERUNGEN</span>
+            <div className="flex gap-1.5">
               {Array.from({ length: totalAreas }).map((_, i) => (
                 <div
                   key={i}
                   style={{
-                    width: 32, height: 32, borderRadius: "50%",
+                    width: 26, height: 26, borderRadius: "50%",
                     background: i < markers.length ? "#FEE600" : "transparent",
                     border: "1.5px solid rgba(254,230,0,0.4)",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    fontFamily: "'Sora', sans-serif", fontSize: 13, fontWeight: 800,
+                    fontFamily: "'Sora', sans-serif", fontSize: 11, fontWeight: 800,
                     color: "#121414",
                     transition: "background 0.2s",
                   }}
@@ -776,7 +775,7 @@ function GameScreen({
       )}
 
       {/* Image canvas */}
-      <div className="flex-1 flex items-center justify-center min-h-0 px-[30px] py-[4px]" style={{ maxHeight: "54vh" }}>
+      <div className="flex-1 flex items-center justify-center min-h-0 px-3 py-[4px]">
         <div className="relative w-full" style={{ maxWidth: "min(81vh, 896px)" }}>
           <div style={{ paddingBottom: "66.67%", position: "relative" }}>
 
@@ -873,7 +872,7 @@ function GameScreen({
 
       {/* Anomaly count bar + Fertig button */}
       <div
-        className="shrink-0 flex items-center justify-between px-[500px] pt-[8px] pb-[10px]"
+        className="shrink-0 flex items-center justify-center gap-8 pt-[6px] pb-[8px]"
         style={{ background: "#121414" }}
       >
         <span className="font-code text-sm font-bold tracking-widest px-4 py-2" style={{ color: "#FEE600", border: "1px solid rgba(254,230,0,0.4)" }}>
