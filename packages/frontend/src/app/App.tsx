@@ -776,8 +776,8 @@ function GameScreen({
 
       {/* Image canvas */}
       <div className="flex-1 flex items-center justify-center min-h-0 px-3 py-[4px]">
-        <div className="relative w-full" style={{ maxWidth: "min(81vh, 896px)" }}>
-          <div style={{ paddingBottom: "66.67%", position: "relative" }}>
+        {/* Size by available height, keep 3:2 aspect. maxWidth guards narrow viewports. */}
+        <div className="relative h-full" style={{ aspectRatio: "3 / 2", maxWidth: "100%" }}>
 
             {/* Image */}
             <img
@@ -866,7 +866,6 @@ function GameScreen({
                 );
               })}
             </div>
-          </div>
         </div>
       </div>
 
