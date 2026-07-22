@@ -130,13 +130,19 @@ adminCatalogRouter.put("/:id", (req, res) => {
   );
 
   if (data.anomalyAreas) {
-    db.prepare(`DELETE FROM anomaly_areas WHERE image_id = ?`).run(req.params.id);
-    const insert = db.prepare(
-      `INSERT INTO anomaly_areas (id, image_id, polygon_json, explanation) VALUES (?, ?, ?, ?)`
-    );
-    for (const area of data.anomalyAreas) {
-      insert.run(area.id ?? randomUUID(), req.params.id, JSON.stringify(area.polygon), area.explanation);
-    }
+    db.transaction(() => {
+      // game_task_hits referenziert anomaly_areas ohne CASCADE — erst bereinigen
+      db.prepare(
+        `DELETE FROM game_task_hits WHERE area_id IN (SELECT id FROM anomaly_areas WHERE image_id = ?)`
+      ).run(req.params.id);
+      db.prepare(`DELETE FROM anomaly_areas WHERE image_id = ?`).run(req.params.id);
+      const insert = db.prepare(
+        `INSERT INTO anomaly_areas (id, image_id, polygon_json, explanation) VALUES (?, ?, ?, ?)`
+      );
+      for (const area of data.anomalyAreas!) {
+        insert.run(area.id ?? randomUUID(), req.params.id, JSON.stringify(area.polygon), area.explanation);
+      }
+    })();
   }
 
   res.json({ status: "ok" });
