@@ -569,6 +569,10 @@ function GameScreen({
   const doneRef = useRef(false);
   const markersRef = useRef<Marker[]>([]);
   markersRef.current = markers;
+  // Tracks the pointerId that went down directly on the overlay (not on a marker),
+  // so a marker is only placed on pointerup if press+release happened on the same
+  // spot — mirrors native "click" semantics while working for touch taps too.
+  const overlayPressRef = useRef<number | null>(null);
 
   // Load task data from API on mount
   useEffect(() => {
@@ -635,8 +639,11 @@ function GameScreen({
   }, [timeLeft, endRound]);
 
   // ── pointer handlers on the overlay div ──────────────────────
+  // Unified for mouse, pen and touch via the Pointer Events API. Mouse/pen keep
+  // the existing hover-preview + click-to-place behavior; touch has no hover, so
+  // a tap places the marker directly (see handleOverlayPointerMove/Up below).
 
-  function getRelativePos(e: React.MouseEvent<HTMLDivElement> | React.PointerEvent<HTMLDivElement>) {
+  function getRelativePos(e: React.PointerEvent<HTMLDivElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
     return {
       x: Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)),
@@ -644,12 +651,22 @@ function GameScreen({
     };
   }
 
-  function handleOverlayMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+  function handleOverlayPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.pointerType === "touch") return; // no hover preview on touch
     const { x, y } = getRelativePos(e);
     setCursor({ x, y });
   }
 
-  function handleOverlayClick(e: React.MouseEvent<HTMLDivElement>) {
+  function handleOverlayPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    // Only fires when the press starts on empty overlay space — markers
+    // stop propagation of their own pointerdown/pointerup.
+    overlayPressRef.current = e.pointerId;
+  }
+
+  function handleOverlayPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    const pressedHere = overlayPressRef.current === e.pointerId;
+    overlayPressRef.current = null;
+    if (!pressedHere) return;
     if (doneRef.current || draggingId !== null) return;
     const totalAreas = taskData?.totalAreas ?? image.zones.length;
     if (markers.length >= totalAreas) return;
@@ -661,6 +678,10 @@ function GameScreen({
     setMarkers(updated);
   }
 
+  function handleOverlayPointerCancel(e: React.PointerEvent<HTMLDivElement>) {
+    if (overlayPressRef.current === e.pointerId) overlayPressRef.current = null;
+  }
+
   function handleMarkerPointerDown(e: React.PointerEvent<HTMLDivElement>, markerId: number) {
     if (doneRef.current) return;
     e.stopPropagation();
@@ -670,6 +691,7 @@ function GameScreen({
 
   function handleMarkerPointerMove(e: React.PointerEvent<HTMLDivElement>, markerId: number) {
     if (draggingId !== markerId) return;
+    e.stopPropagation();
     const container = e.currentTarget.parentElement!;
     const rect = container.getBoundingClientRect();
     const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
@@ -680,7 +702,13 @@ function GameScreen({
     setCursor({ x, y });
   }
 
-  function handleMarkerPointerUp() {
+  function handleMarkerPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    e.stopPropagation();
+    setDraggingId(null);
+  }
+
+  function handleMarkerPointerCancel(e: React.PointerEvent<HTMLDivElement>) {
+    e.stopPropagation();
     setDraggingId(null);
   }
 
@@ -795,10 +823,12 @@ function GameScreen({
             <div
               data-testid="game-overlay"
               className="absolute inset-0"
-              style={{ cursor: "none" }}
-              onClick={handleOverlayClick}
-              onMouseMove={handleOverlayMouseMove}
-              onMouseLeave={() => { setCursor(null); setDraggingId(null); }}
+              style={{ cursor: "none", touchAction: "none", userSelect: "none", WebkitUserSelect: "none" }}
+              onPointerDown={handleOverlayPointerDown}
+              onPointerMove={handleOverlayPointerMove}
+              onPointerUp={handleOverlayPointerUp}
+              onPointerCancel={handleOverlayPointerCancel}
+              onPointerLeave={() => { setCursor(null); setDraggingId(null); }}
             >
               {/* Dashed selection cursor circle */}
               {cursor && draggingId === null && (
@@ -832,6 +862,7 @@ function GameScreen({
                     onPointerDown={e => handleMarkerPointerDown(e, marker.id)}
                     onPointerMove={e => handleMarkerPointerMove(e, marker.id)}
                     onPointerUp={handleMarkerPointerUp}
+                    onPointerCancel={handleMarkerPointerCancel}
                     onClick={e => e.stopPropagation()}
                     style={{
                       position: "absolute",
@@ -848,7 +879,9 @@ function GameScreen({
                       justifyContent: "center",
                       cursor: isDragging ? "grabbing" : "grab",
                       boxShadow: isDragging ? "0 0 18px rgba(254,230,0,0.5)" : "0 0 10px rgba(254,230,0,0.3)",
+                      touchAction: "none",
                       userSelect: "none",
+                      WebkitUserSelect: "none",
                       zIndex: isDragging ? 20 : 10,
                       transition: isDragging ? "none" : "box-shadow 0.2s",
                     }}
