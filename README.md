@@ -21,6 +21,7 @@ cp .env.example .env   # ggf. ADMIN_PASSWORD anpassen
 npm run dev
 ```
 
+
 Startet Backend (Port 3001) und Frontend (Vite Dev-Server, Port 5173) parallel. Der Vite-Dev-
 Server proxyt `/api` und `/images` an das Backend.
 
