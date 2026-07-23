@@ -194,7 +194,7 @@ hitRatio = hits / totalAreas
 timeRatio = remainingTime / timeLimit
 wrongRatio = wrongAttempts / maxWrongAttempts
 
-baseScore = 1000 * hitRatio
+baseScore = 750 * hitRatio
 timeBonus = 250 * hitRatio * timeRatio
 wrongPenalty = 300 * wrongRatio
 skipPenalty = skipped ? 200 * (1 - hitRatio) : 0
@@ -203,13 +203,19 @@ rawScore = baseScore + timeBonus - wrongPenalty - skipPenalty
 score = clamp(round(rawScore), 0, 1000)
 ```
 
-**Beispiel:** 3 Fehlerbereiche, 2 gefunden, 1 Fehlversuch (max. 6), 20s übrig (von 60s), kein Skip → Score 674. Mit Skip zusätzlich: Score 608.
+baseScore und timeBonus summieren sich bei perfektem Lauf (hitRatio = 1) auf maximal
+1000 (750 + 250). Die Basis allein sättigt den Deckel nicht mehr — dadurch bleibt
+die Restzeit auch bei vollständig gefundenen Bereichen ohne Fehlversuche
+score-relevant, statt vom Deckel verdeckt zu werden.
+
+**Beispiel:** 3 Fehlerbereiche, 2 gefunden, 1 Fehlversuch (max. 6), 20s übrig (von 60s), kein Skip → Score 506. Mit Skip zusätzlich: Score 439.
 
 Grundprinzipien:
 - Keine Treffer → 0 oder sehr wenige Punkte
 - Zeitbonus nur bei vorhandenen Treffern
 - Fehlversuche reduzieren Score
 - Skip wird besonders negativ bewertet, wenn noch viele Fehler offen sind
+- Restzeit unterscheidet auch bei perfekter Trefferquote (kein Deckel-Effekt mehr)
 
 ---
 

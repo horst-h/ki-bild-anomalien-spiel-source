@@ -177,7 +177,7 @@ function pointInPoly(px: number, py: number, pts: Array<[number, number]>): bool
 
 function calcScore(found: number, total: number, timeLeft: number, timeLimit: number, misses: number, maxMisses: number): number {
   const r = found / total;
-  const base = 1000 * r;
+  const base = 750 * r;
   const bonus = 250 * r * (timeLeft / timeLimit);
   const penalty = 300 * (misses / Math.max(1, maxMisses));
   return Math.max(0, Math.min(1000, Math.round(base + bonus - penalty)));

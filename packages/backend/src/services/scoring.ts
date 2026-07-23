@@ -15,6 +15,10 @@ function clamp(value: number, min: number, max: number): number {
 /**
  * Score-Formel laut Anforderungsdokument, Abschnitt 13.
  * Ergebnis liegt immer im Bereich 0..1000.
+ *
+ * baseScore + timeBonus erreichen zusammen maximal 1000 (750 + 250) — die Basis
+ * allein sättigt den Deckel nicht mehr, damit die Restzeit auch bei perfekter
+ * Trefferquote (hitRatio = 1) den Score noch unterscheidbar macht.
  */
 export function calculateScore(input: ScoreInput): number {
   const { totalAreas, hits, wrongAttempts, maxWrongAttempts, remainingTime, timeLimit, skipped } =
@@ -24,7 +28,7 @@ export function calculateScore(input: ScoreInput): number {
   const timeRatio = timeLimit > 0 ? remainingTime / timeLimit : 0;
   const wrongRatio = maxWrongAttempts > 0 ? wrongAttempts / maxWrongAttempts : 0;
 
-  const baseScore = 1000 * hitRatio;
+  const baseScore = 750 * hitRatio;
   const timeBonus = 250 * hitRatio * timeRatio;
   const wrongPenalty = 300 * wrongRatio;
   const skipPenalty = skipped ? 200 * (1 - hitRatio) : 0;
